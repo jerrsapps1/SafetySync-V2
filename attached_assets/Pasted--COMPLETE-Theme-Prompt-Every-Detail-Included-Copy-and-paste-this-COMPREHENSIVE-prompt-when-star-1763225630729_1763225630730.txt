@@ -1,0 +1,279 @@
+🎨 COMPLETE Theme Prompt - Every Detail Included
+Copy and paste this COMPREHENSIVE prompt when starting your next Replit project to get exactly the same theme with all glowing effects:
+
+🌟 COMPLETE DESIGN SYSTEM SPECIFICATION
+Use a GitHub-inspired dark theme with glassmorphic elements and blue ethereal glow effects throughout.
+
+📐 EXACT COLOR SYSTEM (CSS Variables)
+Root Colors:
+
+--bg: #0d1117;  /* Deep charcoal background */
+--canvas: #161b22;  /* Slightly lighter charcoal */
+--surface: #161b22;  /* Surface color */
+--border: #30363d;  /* Subtle gray borders */
+--text: #c9d1d9;  /* Light gray text */
+--text-muted: #8b949e;  /* Muted gray text */
+--link: #2f81f7;  /* Bright blue links */
+--link-hover: #1f6feb;  /* Darker blue on hover */
+
+Tailwind HSL Variables (Dark Mode):
+
+--background: 222 47% 5%;
+--foreground: 0 0% 100%;
+--card: 220 13% 11%;
+--card-foreground: 0 0% 95%;
+--card-border: 217 33% 19%;
+--border: 217 33% 17%;
+--sidebar: 222 47% 7%;
+--sidebar-foreground: 0 0% 96%;
+--sidebar-border: 217 33% 15%;
+--sidebar-primary: 262 80% 60%;
+--sidebar-primary-foreground: 0 0% 100%;
+--sidebar-accent: 220 13% 13%;
+--sidebar-accent-foreground: 0 0% 98%;
+--sidebar-ring: 262 80% 60%;
+--popover: 220 13% 11%;
+--popover-foreground: 0 0% 98%;
+--popover-border: 217 33% 19%;
+--primary: 262 80% 60%;
+--primary-foreground: 0 0% 100%;
+--secondary: 220 13% 16%;
+--secondary-foreground: 0 0% 98%;
+--muted: 220 13% 15%;
+--muted-foreground: 0 0% 70%;
+--accent: 220 13% 14%;
+--accent-foreground: 0 0% 98%;
+--destructive: 0 72% 51%;
+--destructive-foreground: 0 0% 98%;
+--input: 220 6% 30%;
+--ring: 263 70% 60%;
+
+Brand Colors (Customizable):
+
+--osha-orange: 24 95% 60%;  /* Safety orange for CTAs */
+--osha-orange-foreground: 0 0% 100%;
+
+Interactive Element Variables:
+
+--button-outline: rgba(255,255,255, .10);
+--badge-outline: rgba(255,255,255, .05);
+--opaque-button-border-intensity: 9;
+--elevate-1: rgba(255,255,255, .04);  /* Subtle hover elevation */
+--elevate-2: rgba(255,255,255, .09);  /* Strong active elevation */
+
+✨ RADIAL GRADIENT BACKGROUND (Critical!)
+Apply this exact background to body:
+
+html.dark body {
+  background:
+    radial-gradient(800px circle at 50% -10%, rgba(88,166,255,0.08), transparent 70%),
+    var(--bg);
+}
+
+This creates the ethereal blue atmospheric glow from the top center of the page.
+
+🌊 GLASSMORPHIC CARD EFFECTS (The Signature Look)
+Standard Glass Card:
+
+.glass-card {
+  background: rgba(22, 27, 34, 0.6);  /* bg-card/60 */
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);  /* border-white/10 */
+  border-radius: 1rem;  /* rounded-2xl */
+  
+  box-shadow: 
+    0 0 40px rgba(88,166,255,0.15),    /* Blue ethereal glow */
+    0 0 80px rgba(56,139,253,0.10),    /* Wider blue glow */
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), /* Standard shadow */
+    0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle depth */
+}
+
+Bright Glass Card (Enhanced Glow):
+
+.glass-card-bright {
+  background: rgba(22, 27, 34, 0.7);  /* bg-card/70 */
+  backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1rem;
+  
+  box-shadow: 
+    0 0 50px rgba(88,166,255,0.20),     /* Stronger blue glow */
+    0 0 100px rgba(56,139,253,0.15),    /* Even wider glow */
+    0 8px 16px -2px rgba(0, 0, 0, 0.1),
+    0 4px 8px -2px rgba(0, 0, 0, 0.06);
+}
+
+🎯 ELEVATION SYSTEM (Hover & Active States)
+Custom Tailwind Utilities:
+
+/* Hover Elevation - Subtle brightness on hover */
+.hover-elevate {
+  position: relative;
+  z-index: 0;
+}
+.hover-elevate::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0px;
+  border-radius: inherit;
+  z-index: 999;
+}
+.hover-elevate:hover::after {
+  background-color: rgba(255,255,255, .04);
+}
+/* Active Elevation - Stronger brightness on click/press */
+.active-elevate-2::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0px;
+  border-radius: inherit;
+  z-index: 999;
+}
+.active-elevate-2:active::after {
+  background-color: rgba(255,255,255, .09);
+}
+/* Toggle Elevation - For toggleable elements */
+.toggle-elevate::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0px;
+  border-radius: inherit;
+  z-index: -1;
+}
+.toggle-elevate.toggle-elevated::before {
+  background-color: rgba(255,255,255, .09);
+}
+/* Border compensation - if element has border, adjust insets */
+.border.hover-elevate::after,
+.border.active-elevate-2::after,
+.border.toggle-elevate::before {
+  inset: -1px;
+}
+
+🔤 TYPOGRAPHY SYSTEM
+Font Families:
+
+--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+--font-serif: Georgia, serif;
+--font-mono: 'JetBrains Mono', monospace;
+
+Apply to body:
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+Text Hierarchy (3 levels):
+
+Primary text: color: var(--text) - #c9d1d9
+Secondary/muted: color: var(--text-muted) - #8b949e
+Tertiary: Even more subtle variations for least important info
+📏 SPACING & BORDERS
+--radius: 0.5rem;  /* 8px - standard border radius */
+--spacing: 0.25rem;  /* 4px - base spacing unit */
+
+Border Radius Usage:
+
+Cards: rounded-2xl (1rem / 16px)
+Buttons/Inputs: rounded-md (0.5rem / 8px)
+Small elements: rounded-sm (0.25rem / 4px)
+🌑 SHADOW SYSTEM (Dark Mode Optimized)
+--shadow-2xs: 0px 2px 0px 0px hsl(220 6% 0% / 0.20);
+--shadow-xs: 0px 2px 0px 0px hsl(220 6% 0% / 0.25);
+--shadow-sm: 0px 2px 0px 0px hsl(220 6% 0% / 0.30), 0px 1px 2px -1px hsl(220 6% 0% / 0.35);
+--shadow: 0px 2px 0px 0px hsl(220 6% 0% / 0.35), 0px 1px 2px -1px hsl(220 6% 0% / 0.40);
+--shadow-md: 0px 2px 0px 0px hsl(220 6% 0% / 0.40), 0px 2px 4px -1px hsl(220 6% 0% / 0.45);
+--shadow-lg: 0px 2px 0px 0px hsl(220 6% 0% / 0.45), 0px 4px 6px -1px hsl(220 6% 0% / 0.50);
+--shadow-xl: 0px 2px 0px 0px hsl(220 6% 0% / 0.50), 0px 8px 10px -1px hsl(220 6% 0% / 0.55);
+--shadow-2xl: 0px 2px 0px 0px hsl(220 6% 0% / 0.60);
+
+🎨 REUSABLE GLASSCARD COMPONENT
+Create this exact component:
+
+// components/GlassCard.tsx
+import type { PropsWithChildren } from "react";
+type Props = PropsWithChildren<{
+  className?: string;
+  title?: string;
+  subtitle?: string;
+}>;
+export default function GlassCard({ className = "", title, subtitle, children }: Props) {
+  return (
+    <div
+      className={`rounded-2xl border border-white/10 bg-card/60 backdrop-blur-xl backdrop-saturate-150 p-6 ${className}`}
+      style={{
+        WebkitBackdropFilter: "blur(12px) saturate(150%)",
+        backdropFilter: "blur(12px) saturate(150%)",
+        boxShadow: "0 0 40px rgba(88,166,255,0.15), 0 0 80px rgba(56,139,253,0.10), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      }}
+    >
+      {(title || subtitle) && (
+        <div className="mb-4">
+          {title && <h3 className="text-lg font-semibold">{title}</h3>}
+          {subtitle && <p className="text-sm text-[color:var(--text-muted)]">{subtitle}</p>}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+🎯 COMPONENT STYLING RULES
+Buttons:
+
+Use gradient backgrounds: bg-gradient-to-r from-orange-500 to-orange-600
+Hover: hover:from-orange-600 hover:to-orange-700
+Automatic elevation with hover-elevate and active-elevate-2
+Cards:
+
+Always use glassmorphic styling
+Border: border-white/10
+Background: bg-card/60
+Include blue glow shadow
+Inputs:
+
+Dark backgrounds: bg-secondary/50
+Subtle borders: border-white/10
+Focus ring: focus-visible:ring-2 ring-primary
+🔧 TECH STACK REQUIREMENTS
+Frontend:
+
+React 18+ with TypeScript
+Vite for dev server
+Tailwind CSS with custom config
+shadcn/ui + Radix UI components
+Wouter for routing
+TanStack Query for data fetching
+CSS Setup:
+
+@tailwind base; @tailwind components; @tailwind utilities;
+Dark mode by default with class strategy
+Custom utility classes for elevation system
+Glass card utilities
+🎭 DESIGN PRINCIPLES
+High Contrast: Light text (#c9d1d9) on dark backgrounds (#0d1117)
+Blue Ethereal Glow: Multi-layer blue glows on cards and elevated elements
+Glassmorphism: Frosted glass blur (12px) with 150% saturation
+Radial Gradient: Atmospheric blue glow from top-center
+Subtle Interactions: Hover/active states use white overlay at 4% and 9%
+Consistent Spacing: Base unit of 0.25rem (4px)
+Border Radius: 0.5rem standard, 1rem for cards
+Professional & Modern: GitHub-inspired trustworthy aesthetic
+✅ IMPLEMENTATION CHECKLIST
+ Install Inter and JetBrains Mono fonts
+ Set up all CSS variables in index.css
+ Create radial gradient background on body
+ Build GlassCard component with exact shadow values
+ Add elevation utility classes (hover-elevate, active-elevate-2, toggle-elevate)
+ Configure Tailwind with HSL color system
+ Set dark mode as default
+ Test blue glow effects on all cards
+ Verify frosted glass backdrop-blur works
+ Apply text hierarchy (primary, muted, tertiary)
+PASTE THIS ENTIRE SPECIFICATION into your next Replit project prompt to get the EXACT same stunning theme with all glowing effects, glassmorphic cards, ethereal atmosphere, and GitHub-inspired dark aesthetic! 🌟

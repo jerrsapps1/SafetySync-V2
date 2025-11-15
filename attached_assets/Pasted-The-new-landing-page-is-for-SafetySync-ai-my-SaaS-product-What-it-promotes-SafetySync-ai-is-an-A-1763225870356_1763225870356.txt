@@ -1,0 +1,34 @@
+The new landing page is for SafetySync.ai, my SaaS product.
+
+What it promotes:
+SafetySync.ai is an AI-powered OSHA training compliance recordkeeping and automation platform. It does not provide training courses; instead it manages training records, expirations, certificates, and audit-ready documentation for OSHA 29 CFR 1910 & 1926.
+
+Who it’s for:
+
+EHS / Safety Managers
+
+HR teams who are responsible for tracking training and compliance
+
+Safety training centers and consultants who manage multiple client companies
+
+Key sections I want on this landing page (using my exact dark GitHub/glassmorphic theme):
+
+Hero section: Headline, subheadline, 2 CTAs (“Book a demo” primary, “View sample workspace” secondary) and a glassmorphic “fake app” preview showing employees + training status.
+
+Problem / pain section: Cards calling out spreadsheets, no single source of truth, audit panic, HR & safety misalignment.
+
+Features grid: 6 feature cards for things like smart recordkeeping, automated expirations, instant certificates, HR + Safety shared workspace, support for OSHA 1910/1926, and audit-ready exports.
+
+For HR section: Copy focused on HR’s role, plus a small dashboard-style card with compliance stats (overall % compliant, overdue, expiring).
+
+For training providers & consultants section: How they can manage multiple clients, upload rosters, and give clients their own view.
+
+Testimonial / social proof: A quote about saving time and being audit-ready for inspectors.
+
+Compliance clarification: Clear note that SafetySync.ai does recordkeeping and documentation, not training content.
+
+Pricing teaser: 3 simple tiers (Essential, Professional, Enterprise) with short blurbs and a CTA like “Get pricing & book a demo”.
+
+Final CTA + footer: Strong closing CTA to book a demo, plus links for Privacy, Terms, and Contact.
+
+Please use the exact theme specification I provided (GitHub-inspired dark, glassmorphic cards, blue ethereal glow, OSHA-orange gradient CTAs, radial gradient background, elevation system, CSS variables) and generate a complete LandingPage component in React + Tailwind that fits into that system.

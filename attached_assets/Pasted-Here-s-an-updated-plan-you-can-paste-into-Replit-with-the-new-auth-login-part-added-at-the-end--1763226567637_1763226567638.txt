@@ -1,0 +1,97 @@
+Here’s an updated plan you can paste into Replit, with the new auth/login part added at the end 👇
+
+Replace the existing plan with this (or paste this under it and trim):
+
+Perfect! Now I have all the details I need. Let me create a comprehensive plan for your SafetySync.ai landing page with the exact GitHub-inspired dark theme, glassmorphic effects, and all the sections you specified.
+
+App type
+Modern web app
+A stunning landing page for SafetySync.ai OSHA training compliance SaaS with GitHub-inspired dark theme and glassmorphic design.
+
+I’ll include the following features:
+
+Hero section with headline, dual CTAs, and glassmorphic app preview showing employee training status table
+
+Problem/pain section with 4 glassmorphic cards highlighting spreadsheet chaos, lack of single source of truth, audit panic, and HR/safety misalignment
+
+Features grid with 6 glassmorphic cards covering smart recordkeeping, automated expirations, instant certificates, HR+Safety workspace, OSHA 1910/1926 support, and audit-ready exports
+
+For HR section with targeted copy and compliance stats dashboard (overall compliance %, overdue count, expiring soon count)
+
+For training providers & consultants section explaining multi-client management capabilities
+
+Testimonial/social proof section with quote about audit readiness and time savings
+
+Compliance clarification section clearly stating recordkeeping vs. training content distinction
+
+Pricing teaser with 3 tiers (Essential, Professional, Enterprise) with short descriptions and demo CTA
+
+Final CTA section with strong closing message and footer with Privacy, Terms, Contact links
+
+Sticky header with logo, navigation links (Features, For HR, Pricing, Login), and primary “Book a demo” CTA button
+
+Complete GitHub-inspired dark theme with radial gradient background (blue ethereal glow from top-center)
+
+All glassmorphic cards with exact specifications: backdrop-blur-xl, border-white/10, blue glow shadows, and elevation system
+
+OSHA-orange gradient CTAs (from-orange-500 to-orange-600) with hover and active states
+
+Responsive design optimized for mobile, tablet, and desktop viewports
+
+GlassCard component with all specified shadow effects and backdrop blur/saturation
+
+PLUS: Authentication & Login Page Scaffolding (JWT-ready)
+
+Build a dedicated /login page (and optional /signup or “create account” page) using the same GitHub-inspired dark theme and a prominent glassmorphic auth card centered on the screen.
+
+The login page should include:
+
+Email/username field
+
+Password field
+
+“Log in” CTA (OSHA-orange gradient button)
+
+Optional “Forgot password?” link (can lead to a placeholder page for now)
+
+Create a simple AuthContext (or similar React context + hook, e.g. useAuth) that will later be wired to a real backend, with:
+
+user (or currentUser) state
+
+token state
+
+login(credentials) and logout() functions
+
+Implement a placeholder auth service that simulates a JWT-based login flow for now:
+
+login function that sends a POST to a configurable endpoint like /api/auth/login (URL and behavior can be mocked for now)
+
+On “success”, store a fake JWT token (string) and basic user object in memory/localStorage and update AuthContext
+
+Clearly mark this as a stub/TODO to be replaced with the real backend we are building later
+
+Show how the app would use the auth state on the frontend:
+
+The Login item in the header nav should link to the /login page
+
+After a “successful” login (using the stub), redirect back to the main page or a placeholder “Dashboard” route that simply shows:
+
+“You are logged in as {email}”
+
+A Logout button that clears the auth state
+
+Make sure the auth layout/components are clean and reusable, so we can later wire them directly to our real Node/Express backend and real JWTs without having to redesign the UI.
+
+Send a message below to revise the plan.
+
+That tells Replit:
+
+Keep building the dark landing page as planned ✅
+
+Also scaffold JWT-ready login UI and auth context that you’ll wire up to your real backend later ✅
+
+If you want, after Replit generates everything, I can help you:
+
+Review the auth context it made, and
+
+Adjust the token handling to match whatever backend routes we set up (/api/auth/login,

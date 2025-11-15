@@ -1,0 +1,520 @@
+import React from "react";
+import GlassCard from "./components/GlassCard"; // 🔧 Adjust path if needed
+
+const stats = {
+  compliance: 92,
+  overdue: 14,
+  expiring: 27,
+};
+
+const currentYear = new Date().getFullYear();
+
+const features = [
+  {
+    title: "Smart training recordkeeping",
+    description:
+      "Keep every employee’s OSHA 1910 & 1926 training in one place—no more scattered spreadsheets or shared drives.",
+    icon: "📚",
+  },
+  {
+    title: "Automated expirations & reminders",
+    description:
+      "Track expiration dates and send proactive reminders before workers fall out of compliance.",
+    icon: "⏰",
+  },
+  {
+    title: "Instant certs & wallet cards",
+    description:
+      "Generate professional certificates and wallet cards that are always available and easy to re-issue.",
+    icon: "🎫",
+  },
+  {
+    title: "HR + Safety shared workspace",
+    description:
+      "Give HR and EHS teams a single source of truth for training status, roles, and locations.",
+    icon: "🤝",
+  },
+  {
+    title: "Construction & general industry",
+    description:
+      "Built for both OSHA 1910 and 1926 so you can manage multiple divisions without duct-taped systems.",
+    icon: "🏗️",
+  },
+  {
+    title: "Audit-ready exports in minutes",
+    description:
+      "Pull clean, inspector-ready reports by company, site, or role with just a few clicks.",
+    icon: "📄",
+  },
+];
+
+const pains = [
+  "Spreadsheets everywhere",
+  "No single source of truth",
+  "Audit prep = panic mode",
+  "HR & safety out of sync",
+];
+
+const tiers = [
+  {
+    name: "Essential",
+    blurb: "For small teams getting out of spreadsheets.",
+    bullets: ["Core recordkeeping", "Single company", "Basic reporting"],
+  },
+  {
+    name: "Professional",
+    blurb: "For multi-site contractors and growing teams.",
+    bullets: ["Multi-location support", "Advanced filters", "Team workspaces"],
+  },
+  {
+    name: "Enterprise",
+    blurb: "For complex organizations and training providers.",
+    bullets: ["Multi-tenant support", "Custom exports", "Dedicated onboarding"],
+  },
+];
+
+const LandingPage: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)]">
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-[color:var(--border)]/70 bg-[color:var(--bg)]/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-md shadow-sky-500/40" />
+            <span className="text-lg font-semibold tracking-tight">
+              SafetySync.ai
+            </span>
+          </div>
+          <nav className="hidden items-center gap-6 text-sm text-[color:var(--text-muted)] md:flex">
+            <a href="#features" className="hover:text-[color:var(--text)]">
+              Features
+            </a>
+            <a href="#for-hr" className="hover:text-[color:var(--text)]">
+              For HR
+            </a>
+            <a href="#pricing" className="hover:text-[color:var(--text)]">
+              Pricing
+            </a>
+            <a href="#login" className="hover:text-[color:var(--text)]">
+              Login
+            </a>
+            <button className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30">
+              Book a demo
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20">
+        {/* Hero */}
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center">
+          <div>
+            <div className="mb-3 inline-flex items-center rounded-full border border-white/10 bg-[color:var(--canvas)]/80 px-3 py-1 text-xs font-medium text-[color:var(--text-muted)]">
+              <span className="mr-2 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              OSHA training compliance, on autopilot
+            </div>
+            <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">
+              All your OSHA training records in one smart workspace.
+            </h1>
+            <p className="mt-4 max-w-xl text-[color:var(--text-muted)]">
+              SafetySync.ai keeps every employee’s training, expirations, and
+              certificates organized and audit-ready—without brittle
+              spreadsheets or missing paperwork.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30">
+                Book a live demo
+              </button>
+              <button className="hover-elevate active-elevate-2 rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)]">
+                View sample workspace
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-[color:var(--text-muted)]">
+              Built for safety teams, HR, and training providers.
+            </p>
+          </div>
+
+          {/* Hero app preview */}
+          <GlassCard className="mt-2 lg:mt-0">
+            <div className="mb-4 flex items-center justify-between text-xs text-[color:var(--text-muted)]">
+              <span>Training overview · Demo company</span>
+              <span>OSHA 1910 · OSHA 1926</span>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-[color:var(--canvas)]/70">
+              <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] border-b border-white/5 bg-white/5 px-3 py-2 text-[11px] text-[color:var(--text-muted)]">
+                <span>Employee</span>
+                <span>Role / Site</span>
+                <span>Standard</span>
+                <span>Status</span>
+                <span className="text-right">Expiration</span>
+              </div>
+              {[
+                {
+                  name: "Maria Lopez",
+                  role: "Foreman · Site A",
+                  std: "OSHA 30 · 1926",
+                  status: "Up to date",
+                  badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+                  exp: "2026-03-14",
+                },
+                {
+                  name: "James Carter",
+                  role: "Laborer · Site B",
+                  std: "OSHA 10 · 1926",
+                  status: "Expires in 14 days",
+                  badge: "bg-amber-500/15 text-amber-300 border-amber-500/40",
+                  exp: "2025-12-01",
+                },
+                {
+                  name: "Alex Nguyen",
+                  role: "Maintenance · Plant 1",
+                  std: "LOTO · 1910",
+                  status: "Expired",
+                  badge: "bg-rose-500/15 text-rose-300 border-rose-500/40",
+                  exp: "2025-09-30",
+                },
+              ].map((row) => (
+                <div
+                  key={row.name}
+                  className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] items-center border-t border-white/5 px-3 py-2.5 text-[11px]"
+                >
+                  <div className="truncate font-medium">{row.name}</div>
+                  <div className="truncate text-[color:var(--text-muted)]">
+                    {row.role}
+                  </div>
+                  <div className="truncate text-[color:var(--text-muted)]">
+                    {row.std}
+                  </div>
+                  <div className="flex">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${row.badge}`}
+                    >
+                      {row.status}
+                    </span>
+                  </div>
+                  <div className="text-right text-[color:var(--text-muted)]">
+                    {row.exp}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </section>
+
+        {/* Pain section */}
+        <section
+          id="problem"
+          className="mt-20 border-t border-[color:var(--border)] pt-12"
+        >
+          <div className="max-w-3xl">
+            <h2 className="text-2xl font-semibold">
+              Spreadsheets weren’t built for OSHA audits.
+            </h2>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              When training records are scattered across spreadsheets, paper
+              files, and inboxes, you’re always one missing certificate away
+              from a bad day with an inspector. SafetySync.ai gives you a single
+              source of truth for OSHA 1910 and 1926 training.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {pains.map((pain) => (
+              <GlassCard
+                key={pain}
+                className="hover-elevate active-elevate-2"
+                title={pain}
+                subtitle=""
+              >
+                <p className="text-sm text-[color:var(--text-muted)]">
+                  {pain === "Spreadsheets everywhere" &&
+                    "Multiple versions, no history, and nobody sure which sheet is the latest."}
+                  {pain === "No single source of truth" &&
+                    "HR, safety, and operations each keep their own copy of reality."}
+                  {pain === "Audit prep = panic mode" &&
+                    "Scramble for certificates, sign-in sheets, and proof of training at the worst possible time."}
+                  {pain === "HR & safety out of sync" &&
+                    "People data changes daily, but training records stay stuck in static files."}
+                </p>
+              </GlassCard>
+            ))}
+          </div>
+        </section>
+
+        {/* Features */}
+        <section id="features" className="mt-20">
+          <h2 className="text-2xl font-semibold">
+            Everything you need to prove training happened.
+          </h2>
+          <p className="mt-3 max-w-2xl text-[color:var(--text-muted)]">
+            From field crews to plant operators, see who’s trained, what’s
+            expiring, and what’s missing—without digging for paperwork.
+          </p>
+          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {features.map((feature) => (
+              <GlassCard
+                key={feature.title}
+                className="hover-elevate active-elevate-2"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 text-xl">{feature.icon}</div>
+                  <div>
+                    <h3 className="text-sm font-semibold">{feature.title}</h3>
+                    <p className="mt-2 text-sm text-[color:var(--text-muted)]">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+        </section>
+
+        {/* For HR */}
+        <section
+          id="for-hr"
+          className="mt-20 grid gap-10 border-t border-[color:var(--border)] pt-12 lg:grid-cols-2"
+        >
+          <div>
+            <h2 className="text-2xl font-semibold">
+              Built for HR teams who secretly own compliance.
+            </h2>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              HR is usually the one asked to “pull training records” on short
+              notice. SafetySync.ai connects training data to people data so
+              you’re not chasing instructors or digging through old folders.
+            </p>
+            <ul className="mt-5 space-y-3 text-sm text-[color:var(--text-muted)]">
+              <li>• See who’s out of compliance by location, role, or department.</li>
+              <li>
+                • Keep terminations, new hires, and transfers in sync with
+                required training.
+              </li>
+              <li>
+                • Hand OSHA inspectors clean reports instead of raw spreadsheets.
+              </li>
+            </ul>
+          </div>
+          <GlassCard className="relative overflow-hidden">
+            <h3 className="text-sm font-semibold text-[color:var(--text)]">
+              HR Compliance Snapshot
+            </h3>
+            <p className="mt-1 text-xs text-[color:var(--text-muted)]">
+              Demo company · All locations
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div>
+                <div className="text-xs text-[color:var(--text-muted)]">
+                  Overall compliance
+                </div>
+                <div className="mt-1 text-2xl font-semibold">
+                  {stats.compliance}%
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[color:var(--text-muted)]">
+                  Overdue trainings
+                </div>
+                <div className="mt-1 text-xl font-semibold text-rose-300">
+                  {stats.overdue}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[color:var(--text-muted)]">
+                  Expiring this month
+                </div>
+                <div className="mt-1 text-xl font-semibold text-amber-300">
+                  {stats.expiring}
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 space-y-2 text-xs text-[color:var(--text-muted)]">
+              <div className="flex items-center justify-between">
+                <span>Field operations</span>
+                <span className="text-emerald-300">95% compliant</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Plant maintenance</span>
+                <span className="text-amber-300">88% compliant</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Subcontractors</span>
+                <span className="text-rose-300">72% compliant</span>
+              </div>
+            </div>
+          </GlassCard>
+        </section>
+
+        {/* Training providers */}
+        <section className="mt-20 grid gap-10 lg:grid-cols-[1.1fr_minmax(0,0.9fr)]">
+          <div>
+            <h2 className="text-2xl font-semibold">
+              A workspace your clients actually trust.
+            </h2>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              Training centers and safety consultants use SafetySync.ai to give
+              each client a clean view of their training status—without sending
+              a new spreadsheet every month.
+            </p>
+            <ul className="mt-5 space-y-3 text-sm text-[color:var(--text-muted)]">
+              <li>• Manage multiple client companies from one dashboard.</li>
+              <li>• Upload rosters and let the system handle certificates and reminders.</li>
+              <li>• Offer clients a portal with their own compliance view.</li>
+            </ul>
+          </div>
+          <GlassCard title="Client portfolio" subtitle="Training provider view">
+            <div className="mt-2 space-y-2 text-xs">
+              {[
+                {
+                  client: "Atlas Demolition",
+                  employees: 184,
+                  compliance: "90%",
+                },
+                {
+                  client: "Northline Manufacturing",
+                  employees: 96,
+                  compliance: "94%",
+                },
+                {
+                  client: "Horizon Environmental",
+                  employees: 42,
+                  compliance: "88%",
+                },
+              ].map((c) => (
+                <div
+                  key={c.client}
+                  className="flex items-center justify-between rounded-lg border border-white/10 bg-[color:var(--canvas)]/70 px-3 py-2"
+                >
+                  <div>
+                    <div className="text-[color:var(--text)]">{c.client}</div>
+                    <div className="text-[color:var(--text-muted)]">
+                      {c.employees} employees
+                    </div>
+                  </div>
+                  <div className="text-[color:var(--text-muted)]">
+                    {c.compliance} compliant
+                  </div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </section>
+
+        {/* Testimonial */}
+        <section className="mt-20">
+          <GlassCard className="mx-auto max-w-3xl text-center">
+            <p className="text-sm text-[color:var(--text-muted)]">
+              “Before SafetySync.ai, we were juggling three spreadsheets and a
+              filing cabinet. Now, when an OSHA inspector shows up, I can pull
+              everything they ask for in one report.”
+            </p>
+            <div className="mt-4 text-sm font-medium">
+              Safety Director, Mid-size Contractor
+            </div>
+            <div className="mt-1 text-xs text-[color:var(--text-muted)]">
+              500+ employees · Multi-site operations
+            </div>
+          </GlassCard>
+        </section>
+
+        {/* Compliance callout */}
+        <section className="mt-16">
+          <GlassCard className="border-dashed border-white/20 bg-[color:var(--canvas)]/70 text-xs text-[color:var(--text-muted)]">
+            <p>
+              SafetySync.ai does not provide training courses. We handle the{" "}
+              <span className="font-medium text-[color:var(--text)]">
+                recordkeeping and documentation
+              </span>{" "}
+              that proves your training happened and keeps you compliant with
+              OSHA 29 CFR 1910 &amp; 1926.
+            </p>
+          </GlassCard>
+        </section>
+
+        {/* Pricing teaser */}
+        <section
+          id="pricing"
+          className="mt-20 border-t border-[color:var(--border)] pt-12"
+        >
+          <h2 className="text-2xl font-semibold">
+            Simple plans that scale with your workforce.
+          </h2>
+          <p className="mt-3 max-w-2xl text-[color:var(--text-muted)]">
+            Start small and grow into multi-division, multi-company workspaces
+            without changing tools.
+          </p>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {tiers.map((tier) => (
+              <GlassCard
+                key={tier.name}
+                className="flex flex-col hover-elevate active-elevate-2"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-sm font-semibold">{tier.name}</div>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-[color:var(--text-muted)]">
+                    {tier.name === "Essential" && "Teams up to ~100"}
+                    {tier.name === "Professional" && "Growing orgs"}
+                    {tier.name === "Enterprise" && "Complex environments"}
+                  </span>
+                </div>
+                <p className="text-xs text-[color:var(--text-muted)]">
+                  {tier.blurb}
+                </p>
+                <ul className="mt-3 space-y-1.5 text-xs text-[color:var(--text-muted)]">
+                  {tier.bullets.map((b) => (
+                    <li key={b}>• {b}</li>
+                  ))}
+                </ul>
+              </GlassCard>
+            ))}
+          </div>
+          <div className="mt-6">
+            <button className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30">
+              Get pricing &amp; book a demo
+            </button>
+          </div>
+        </section>
+
+        {/* Final CTA + Footer */}
+        <section className="mt-20 text-center">
+          <h2 className="text-2xl font-semibold">
+            Ready to stop chasing training records?
+          </h2>
+          <p className="mt-3 text-sm text-[color:var(--text-muted)]">
+            Give your HR, safety, and operations teams one place to keep OSHA
+            training under control.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30">
+              Book a demo
+            </button>
+            <button className="hover-elevate active-elevate-2 rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)]">
+              See how the workspace is structured →
+            </button>
+          </div>
+        </section>
+
+        <footer
+          id="login"
+          className="mt-16 border-t border-[color:var(--border)] pt-6 text-xs text-[color:var(--text-muted)]"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>© {currentYear} SafetySync.ai. All rights reserved.</div>
+            <div className="flex flex-wrap gap-4">
+              <button className="text-xs hover:text-[color:var(--text)]">
+                Privacy
+              </button>
+              <button className="text-xs hover:text-[color:var(--text)]">
+                Terms
+              </button>
+              <button className="text-xs hover:text-[color:var(--text)]">
+                Contact
+              </button>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+};
+
+export default LandingPage;
