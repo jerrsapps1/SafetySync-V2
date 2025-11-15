@@ -89,8 +89,8 @@ export default function Landing() {
             <a href="#pricing" className="hover:text-[color:var(--text)]" data-testid="link-pricing">
               Pricing
             </a>
-            <Link href="/login">
-              <a className="hover:text-[color:var(--text)]" data-testid="link-login">Login</a>
+            <Link href="/login" className="hover:text-[color:var(--text)]" data-testid="link-login">
+              Login
             </Link>
             <button 
               className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
