@@ -4,6 +4,7 @@ interface User {
   id: string;
   username: string;
   email: string;
+  companyId: string | null;
 }
 
 interface AuthContextType {
@@ -22,40 +23,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("auth_token");
-    const storedUser = localStorage.getItem("auth_user");
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem("auth_token");
+      
+      if (storedToken) {
+        try {
+          const response = await fetch("/api/auth/me", {
+            headers: {
+              "Authorization": `Bearer ${storedToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            setToken(storedToken);
+            setUser(userData);
+          } else {
+            localStorage.removeItem("auth_token");
+          }
+        } catch (error) {
+          console.error("Auth init error:", error);
+          localStorage.removeItem("auth_token");
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (credentials: { email: string; password: string }) => {
-    // TODO: Replace with real backend API call to /api/auth/login
-    // Simulating JWT login for now
-    console.log("Login attempt:", credentials);
-    
-    // Mock successful login
-    const mockToken = "mock-jwt-token-" + Date.now();
-    const mockUser: User = {
-      id: "user-123",
-      username: credentials.email.split("@")[0],
-      email: credentials.email,
-    };
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(credentials),
+    });
 
-    setToken(mockToken);
-    setUser(mockUser);
-    localStorage.setItem("auth_token", mockToken);
-    localStorage.setItem("auth_user", JSON.stringify(mockUser));
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Login failed");
+    }
+
+    const data = await response.json();
+    setToken(data.token);
+    setUser(data.user);
+    localStorage.setItem("auth_token", data.token);
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
   };
 
   return (
