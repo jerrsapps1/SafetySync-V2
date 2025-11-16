@@ -489,9 +489,9 @@ export default function Landing() {
       <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>SafetySync.ai Demo</DialogTitle>
+            <DialogTitle>SafetySync.ai demo preview</DialogTitle>
             <DialogDescription>
-              See how SafetySync.ai helps you maintain OSHA compliance
+              See how SafetySync.ai helps you document training, understanding, and OSHA compliance.
             </DialogDescription>
           </DialogHeader>
           
@@ -500,20 +500,31 @@ export default function Landing() {
             <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-indigo-500/20 via-sky-500/20 to-emerald-400/20 border border-sky-500/30 flex items-center justify-center mb-4">
               <Play className="h-8 w-8 text-sky-400 ml-1" />
             </div>
-            <h3 className="text-lg font-semibold text-center">Demo Coming Soon</h3>
+            <h3 className="text-lg font-semibold text-center">Demo preview coming soon</h3>
             <p className="mt-2 text-sm text-[color:var(--text-muted)] text-center max-w-md">
-              We're preparing an interactive demo to show you how SafetySync.ai streamlines OSHA compliance tracking. 
-              In the meantime, create an account to explore the platform.
+              We're preparing a short visual walkthrough of how safety teams use SafetySync.ai to organize OSHA 1910 & 1926 training documentation and understanding checks in one place.
             </p>
-            <Link href="/login">
+            <p className="mt-2 text-sm text-[color:var(--text-muted)] text-center max-w-md">
+              Until then, you can create an account to explore the workspace structure and see how the platform is organized.
+            </p>
+            <div className="mt-6 flex items-center gap-3">
+              <Link href="/login">
+                <button 
+                  className="rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
+                  data-testid="button-demo-modal-signup"
+                  onClick={() => setDemoOpen(false)}
+                >
+                  Create an account
+                </button>
+              </Link>
               <button 
-                className="mt-6 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
-                data-testid="button-demo-modal-signup"
+                className="rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)] hover-elevate active-elevate-2"
+                data-testid="button-demo-modal-close"
                 onClick={() => setDemoOpen(false)}
               >
-                Create an account
+                Close
               </button>
-            </Link>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
