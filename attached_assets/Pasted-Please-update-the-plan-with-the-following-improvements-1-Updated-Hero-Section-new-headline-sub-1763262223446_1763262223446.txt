@@ -1,0 +1,61 @@
+Please update the plan with the following improvements:
+
+1. Updated Hero Section (new headline + subheadline)
+Replace the current hero text with this:
+
+Headline:
+AI-powered OSHA compliance you can trust
+
+Subheadline:
+Clear, inspection-ready documentation that shows training, understanding, and compliance—organized automatically.
+
+Keep the buttons as:
+
+Primary: Create an account
+
+Secondary: View sample workspace (future link)
+And keep:
+Built for safety managers first, with HR collaboration support.
+
+2. Move the training table block further down the page.
+It should not appear in the hero. Place it after the first major “Document learning and understanding” feature section or in a “How it works” section.
+
+3. Update the “Document learning outcomes” section
+Replace the paragraph with:
+“SafetySync.ai helps you document that required training was delivered, how understanding was evaluated, and how readiness was demonstrated—so you can show inspectors clear evidence of compliance, not just names on a sign-in sheet.”
+
+4. Safety vs HR positioning
+Use this updated block:
+Built for safety managers who lead compliance.
+“Safety and EHS teams are ultimately responsible for OSHA compliance. SafetySync.ai gives you the tools to maintain clear, defensible records, coordinate with HR as people move and change roles, and respond confidently to inspections.”
+
+5. AI Trust & Transparency Section
+Replace with:
+Transparent AI that supports your expertise.
+“Our AI assists with documentation and compliance tracking—it doesn’t replace safety expertise or make decisions for you. You stay in control of training content and standards while our AI helps you maintain clear, audit-ready records that reflect how learning and understanding were evaluated.”
+
+6. Footer (add a professional dark-theme footer component)
+Add a footer with three columns:
+
+SafetySync.ai – one-line mission: “AI-powered OSHA compliance for modern safety teams.”
+
+Product – Features, Pricing, Login, Create an account
+
+Company – About, Contact, Privacy, Terms
+
+Footer styling: dark background (#0d1117), subtle borders (white/5%), muted text, professional layout (similar to GitHub style).
+
+7. Chatbot
+Do NOT include a chatbot on the page yet. Instead, generate a placeholder component (SupportWidget.tsx) that is not rendered by default. I may enable it later.
+
+8. All other sections stay, but update tone to reflect:
+
+Focus on documenting training + understanding
+
+Safety leads compliance, HR supports
+
+Compliance clarity and confidence, not “fine prevention”
+
+Avoid the word “attendance”
+
+Please update the landing page, layout ordering, copy, and footer accordingly.

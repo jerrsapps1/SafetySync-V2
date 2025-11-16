@@ -113,10 +113,10 @@ export default function Landing() {
               AI-powered OSHA compliance
             </div>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">
-              Compliance made easy through our AI platform.
+              AI-powered OSHA compliance you can trust
             </h1>
             <p className="mt-4 max-w-xl text-[color:var(--text-muted)]">
-              SafetySync.ai helps safety managers maintain OSHA compliance with intelligent recordkeeping that proves both training completion and worker understanding—not just attendance tracking.
+              Clear, inspection-ready documentation that shows training, understanding, and compliance—organized automatically.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link href="/login">
@@ -136,12 +136,92 @@ export default function Landing() {
               </button>
             </div>
             <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-              Built for safety managers, with HR collaboration support.
+              Built for safety managers first, with HR collaboration support.
             </p>
           </div>
 
-          {/* Hero app preview */}
-          <GlassCard className="mt-2 lg:mt-0">
+          {/* Simple hero visual */}
+          <div className="mt-8 lg:mt-0">
+            <GlassCard className="p-8 text-center">
+              <div className="mx-auto h-24 w-24 rounded-2xl bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-2xl shadow-sky-500/40" />
+              <h3 className="mt-6 text-lg font-semibold">Documentation You Can Trust</h3>
+              <p className="mt-2 text-sm text-[color:var(--text-muted)]">
+                Training records, understanding verification, and compliance status—all in one clear system.
+              </p>
+            </GlassCard>
+          </div>
+        </section>
+
+        {/* Pain section */}
+        <section
+          id="problem"
+          className="mt-20 border-t border-[color:var(--border-custom)] pt-12"
+        >
+          <div className="max-w-3xl">
+            <h2 className="text-2xl font-semibold">
+              Spreadsheets weren't built for OSHA audits.
+            </h2>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              When training records are scattered across spreadsheets, paper
+              files, and inboxes, you're always one missing certificate away
+              from a bad day with an inspector. SafetySync.ai gives you a single
+              source of truth for OSHA 1910 and 1926 training.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {pains.map((pain) => (
+              <GlassCard
+                key={pain.title}
+                className="hover-elevate active-elevate-2"
+              >
+                <h3 className="text-sm font-semibold">{pain.title}</h3>
+                <p className="mt-2 text-sm text-[color:var(--text-muted)]">
+                  {pain.desc}
+                </p>
+              </GlassCard>
+            ))}
+          </div>
+        </section>
+
+        {/* Features */}
+        <section id="features" className="mt-20">
+          <h2 className="text-2xl font-semibold">
+            Document learning and understanding.
+          </h2>
+          <p className="mt-3 max-w-2xl text-[color:var(--text-muted)]">
+            SafetySync.ai helps you document that required training was delivered, how understanding was evaluated, and how readiness was demonstrated—so you can show inspectors clear evidence of compliance, not just names on a sign-in sheet.
+          </p>
+          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {features.map((feature) => (
+              <GlassCard
+                key={feature.title}
+                className="hover-elevate active-elevate-2"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 text-xl">{feature.icon}</div>
+                  <div>
+                    <h3 className="text-sm font-semibold">{feature.title}</h3>
+                    <p className="mt-2 text-sm text-[color:var(--text-muted)]">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+        </section>
+
+        {/* How It Works - Training Records View */}
+        <section className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
+          <div className="text-center max-w-3xl mx-auto mb-8">
+            <h2 className="text-2xl font-semibold">
+              See compliance status at a glance.
+            </h2>
+            <p className="mt-3 text-[color:var(--text-muted)]">
+              Track who's trained, what's expiring, and what needs attention—all in one clear view.
+            </p>
+          </div>
+          <GlassCard>
             <div className="mb-4 flex items-center justify-between text-xs text-[color:var(--text-muted)]">
               <span>Training overview · Demo company</span>
               <span>OSHA 1910 · OSHA 1926</span>
@@ -207,65 +287,6 @@ export default function Landing() {
           </GlassCard>
         </section>
 
-        {/* Pain section */}
-        <section
-          id="problem"
-          className="mt-20 border-t border-[color:var(--border-custom)] pt-12"
-        >
-          <div className="max-w-3xl">
-            <h2 className="text-2xl font-semibold">
-              Spreadsheets weren't built for OSHA audits.
-            </h2>
-            <p className="mt-3 text-[color:var(--text-muted)]">
-              When training records are scattered across spreadsheets, paper
-              files, and inboxes, you're always one missing certificate away
-              from a bad day with an inspector. SafetySync.ai gives you a single
-              source of truth for OSHA 1910 and 1926 training.
-            </p>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {pains.map((pain) => (
-              <GlassCard
-                key={pain.title}
-                className="hover-elevate active-elevate-2"
-              >
-                <h3 className="text-sm font-semibold">{pain.title}</h3>
-                <p className="mt-2 text-sm text-[color:var(--text-muted)]">
-                  {pain.desc}
-                </p>
-              </GlassCard>
-            ))}
-          </div>
-        </section>
-
-        {/* Features */}
-        <section id="features" className="mt-20">
-          <h2 className="text-2xl font-semibold">
-            Document learning outcomes, not just attendance.
-          </h2>
-          <p className="mt-3 max-w-2xl text-[color:var(--text-muted)]">
-            SafetySync.ai helps you prove that workers learned and understood required training—the documentation inspectors and auditors actually need for compliance.
-          </p>
-          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => (
-              <GlassCard
-                key={feature.title}
-                className="hover-elevate active-elevate-2"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 text-xl">{feature.icon}</div>
-                  <div>
-                    <h3 className="text-sm font-semibold">{feature.title}</h3>
-                    <p className="mt-2 text-sm text-[color:var(--text-muted)]">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        </section>
-
         {/* For Safety */}
         <section
           id="for-safety"
@@ -273,19 +294,15 @@ export default function Landing() {
         >
           <div>
             <h2 className="text-2xl font-semibold">
-              Built for safety managers who own compliance.
+              Built for safety managers who lead compliance.
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Safety and EHS teams are responsible for OSHA compliance. SafetySync.ai gives you the tools to maintain compliant records, coordinate with HR on personnel changes, and respond confidently to inspections.
+              Safety and EHS teams are ultimately responsible for OSHA compliance. SafetySync.ai gives you the tools to maintain clear, defensible records, coordinate with HR as people move and change roles, and respond confidently to inspections.
             </p>
-            <ul className="mt-5 space-y-3 text-[color:var(--text-muted)]">
-              <li>• Track compliance status by location, role, or OSHA standard.</li>
-              <li>
-                • Collaborate with HR to keep training current through personnel changes.
-              </li>
-              <li>
-                • Generate inspection-ready reports that document learning outcomes.
-              </li>
+            <ul className="mt-5 space-y-3 text-sm text-[color:var(--text-muted)]">
+              <li>• Track compliance status by location, role, or OSHA standard</li>
+              <li>• Coordinate with HR as people move and change roles</li>
+              <li>• Generate inspection-ready reports that document learning outcomes</li>
             </ul>
           </div>
           <GlassCard>
@@ -310,25 +327,6 @@ export default function Landing() {
           </GlassCard>
         </section>
 
-        {/* For Training Providers */}
-        <section className="mt-20">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl font-semibold">
-              For training providers & consultants managing multiple clients.
-            </h2>
-            <p className="mt-3 text-[color:var(--text-muted)]">
-              Upload rosters, manage certifications across companies, and give
-              your clients secure access to their own training records—all from
-              one platform.
-            </p>
-            <ul className="mt-5 space-y-3 text-sm text-[color:var(--text-muted)]">
-              <li>• Multi-tenant workspace for managing dozens of client companies</li>
-              <li>• Bulk certificate generation and custom branding options</li>
-              <li>• Client portals with read-only access to their own data</li>
-            </ul>
-          </div>
-        </section>
-
         {/* Testimonial */}
         <section className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
           <GlassCard className="max-w-3xl mx-auto text-center">
@@ -344,14 +342,14 @@ export default function Landing() {
           </GlassCard>
         </section>
 
-        {/* AI Trust & Compliance */}
+        {/* AI Trust & Transparency */}
         <section className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl font-semibold">
               Transparent AI that supports your expertise.
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Our AI assists with documentation and compliance tracking—not replacing safety expertise, but enhancing it. SafetySync.ai is a compliance platform, not a training provider. We help you maintain audit-ready records that prove learning outcomes while you continue working with your trusted instructors and training programs.
+              Our AI assists with documentation and compliance tracking—it doesn't replace safety expertise or make decisions for you. You stay in control of training content and standards while our AI helps you maintain clear, audit-ready records that reflect how learning and understanding were evaluated.
             </p>
           </div>
         </section>
@@ -406,15 +404,78 @@ export default function Landing() {
         </section>
 
         {/* Footer */}
-        <footer className="mt-20 border-t border-[color:var(--border-custom)] pt-8 text-center">
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-[color:var(--text-muted)]">
-            <a href="#privacy" className="hover:text-[color:var(--text)]" data-testid="link-privacy">Privacy Policy</a>
-            <a href="#terms" className="hover:text-[color:var(--text)]" data-testid="link-terms">Terms of Service</a>
-            <a href="#contact" className="hover:text-[color:var(--text)]" data-testid="link-contact">Contact</a>
+        <footer className="mt-20 border-t border-white/5 bg-[#0d1117] pt-12 pb-8">
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Company Info */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-md shadow-sky-500/40" />
+                <span className="text-base font-semibold">SafetySync.ai</span>
+              </div>
+              <p className="text-sm text-[color:var(--text-muted)]">
+                AI-powered OSHA compliance for modern safety teams.
+              </p>
+            </div>
+
+            {/* Product Links */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-sm text-[color:var(--text-muted)]">
+                <li>
+                  <a href="#features" className="hover:text-[color:var(--text)]" data-testid="footer-link-features">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-[color:var(--text)]" data-testid="footer-link-pricing">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <Link href="/login" className="hover:text-[color:var(--text)]" data-testid="footer-link-login">
+                    Login
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/login" className="hover:text-[color:var(--text)]" data-testid="footer-link-signup">
+                    Create an account
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company Links */}
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-sm text-[color:var(--text-muted)]">
+                <li>
+                  <a href="#about" className="hover:text-[color:var(--text)]" data-testid="footer-link-about">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="#contact" className="hover:text-[color:var(--text)]" data-testid="footer-link-contact">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="#privacy" className="hover:text-[color:var(--text)]" data-testid="footer-link-privacy">
+                    Privacy
+                  </a>
+                </li>
+                <li>
+                  <a href="#terms" className="hover:text-[color:var(--text)]" data-testid="footer-link-terms">
+                    Terms
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <p className="mt-4 text-xs text-[color:var(--text-muted)]">
+
+          {/* Copyright */}
+          <div className="mt-12 pt-8 border-t border-white/5 text-center text-xs text-[color:var(--text-muted)]">
             © {currentYear} SafetySync.ai. All rights reserved.
-          </p>
+          </div>
         </footer>
       </main>
     </div>
