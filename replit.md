@@ -2,9 +2,33 @@
 
 ## Overview
 
-SafetySync.ai is an AI-powered OSHA training compliance recordkeeping and automation platform designed for EHS/Safety Managers, HR teams, and safety training consultants. The platform manages training records, expirations, certificates, and audit-ready documentation for OSHA 29 CFR 1910 and 1926 compliance. It does not provide training courses but rather tracks and manages training completion data.
+SafetySync.ai is an AI-powered OSHA compliance platform designed for Safety/EHS Managers with HR collaboration support. The platform helps document training delivery, understanding evaluation, and compliance readiness through intelligent recordkeeping for OSHA 29 CFR 1910 and 1926. It is a compliance platform, not a training provider—helping teams maintain clear, audit-ready records while continuing to work with their preferred instructors and training programs.
 
 The application features a marketing landing page with a GitHub-inspired dark theme and glassmorphic design, along with an authenticated dashboard for managing employees and training records.
+
+## Recent Updates (November 2024)
+
+**Landing Page Messaging Improvements:**
+- Updated hero: "AI-powered OSHA compliance you can trust" with emphasis on inspection-ready documentation
+- Moved training table preview from hero to dedicated "How It Works" section after features
+- Updated features section: "Document learning and understanding" emphasizing evidence of compliance
+- Repositioned "For Safety" section: "Built for safety managers who lead compliance" 
+- Enhanced AI transparency messaging: AI assists with documentation, doesn't replace expertise
+- Removed "For Training Providers" section to maintain focus on primary audience
+- Added professional 3-column dark-theme footer (Company info, Product, Company links)
+- Created SupportWidget.tsx placeholder component for future chatbot integration (not currently rendered)
+
+**Authentication Improvements:**
+- Login now accepts both email and username
+- Sign-up modal with username (optional), email (required), password, and company name
+- All CTAs changed from "Book a demo" / "Contact sales" to "Create an account"
+
+**Messaging Guidelines:**
+- Focus on compliance clarity and trust, not "avoiding fines"
+- Emphasize documenting learning outcomes and understanding, not just training completion
+- Safety managers own compliance; HR collaborates and supports
+- No references to "attendance tracking"
+- AI is transparent and enhances expertise rather than replacing it
 
 ## User Preferences
 
@@ -38,11 +62,14 @@ Preferred communication style: Simple, everyday language.
 - Local state management with React hooks
 
 **Key Frontend Pages**
-- `/` - Landing page with hero, features, pricing, and testimonials
-- `/login` - Authentication page with glassmorphic card design
+- `/` - Landing page with hero, features, "How It Works" section, pricing, and professional footer
+- `/login` - Authentication page with glassmorphic card design and sign-up modal
 - `/dashboard` - Training records overview with compliance metrics
 - `/employees` - Employee management with location assignments
 - `/not-found` - 404 error page
+
+**Key Components**
+- `SupportWidget.tsx` - Placeholder component for future chatbot/support feature (not currently rendered)
 
 ### Backend Architecture
 
@@ -57,6 +84,8 @@ Preferred communication style: Simple, everyday language.
 - Bearer token authentication via Authorization headers
 - Session management with 7-day token expiration
 - Auth middleware protecting API routes
+- Login supports both email and username lookup
+- Registration requires email (unique), optional username, password, and company name
 
 **API Design**
 - RESTful API endpoints under `/api` prefix
