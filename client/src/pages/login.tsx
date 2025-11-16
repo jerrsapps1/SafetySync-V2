@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import GlassCard from "@/components/GlassCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -13,6 +15,16 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+  
+  // Sign up form state
+  const [signUpData, setSignUpData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    companyName: "",
+  });
+  const [isSignUpLoading, setIsSignUpLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +48,44 @@ export default function Login() {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSignUpLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(signUpData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Registration failed");
+      }
+
+      const data = await response.json();
+      localStorage.setItem("auth_token", data.token);
+      
+      toast({
+        title: "Account created successfully",
+        description: "Welcome to SafetySync.ai!",
+      });
+      
+      setIsSignUpOpen(false);
+      setLocation("/dashboard");
+      window.location.reload(); // Reload to initialize auth
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Sign up failed",
+        description: error.message || "Please try again.",
+      });
+    } finally {
+      setIsSignUpLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -50,11 +100,11 @@ export default function Login() {
         <GlassCard>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email or Username</Label>
               <Input
                 id="email"
-                type="email"
-                placeholder="your.email@company.com"
+                type="text"
+                placeholder="your.email@company.com or username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -100,9 +150,81 @@ export default function Login() {
 
         <p className="mt-6 text-center text-xs text-[color:var(--text-muted)]">
           Don't have an account?{" "}
-          <a href="#signup" className="text-[color:var(--text)] hover:underline">
-            Contact sales
-          </a>
+          <Dialog open={isSignUpOpen} onOpenChange={setIsSignUpOpen}>
+            <DialogTrigger asChild>
+              <button className="text-[color:var(--text)] hover:underline" data-testid="link-create-account">
+                Create an account
+              </button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-white/10 max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create your account</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-username">Username (optional)</Label>
+                  <Input
+                    id="signup-username"
+                    placeholder="johndoe"
+                    value={signUpData.username}
+                    onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
+                    className="bg-secondary/50 border-white/10"
+                    data-testid="input-signup-username"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email *</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="your.email@company.com"
+                    value={signUpData.email}
+                    onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                    required
+                    className="bg-secondary/50 border-white/10"
+                    data-testid="input-signup-email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password *</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={signUpData.password}
+                    onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                    required
+                    className="bg-secondary/50 border-white/10"
+                    data-testid="input-signup-password"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-company">Company Name *</Label>
+                  <Input
+                    id="signup-company"
+                    placeholder="ACME Construction"
+                    value={signUpData.companyName}
+                    onChange={(e) => setSignUpData({ ...signUpData, companyName: e.target.value })}
+                    required
+                    className="bg-secondary/50 border-white/10"
+                    data-testid="input-signup-company"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSignUpLoading}
+                  data-testid="button-signup-submit"
+                >
+                  {isSignUpLoading ? "Creating account..." : "Create account"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </p>
       </div>
     </div>

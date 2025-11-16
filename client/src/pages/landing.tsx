@@ -83,8 +83,8 @@ export default function Landing() {
             <a href="#features" className="hover:text-[color:var(--text)]" data-testid="link-features">
               Features
             </a>
-            <a href="#for-hr" className="hover:text-[color:var(--text)]" data-testid="link-for-hr">
-              For HR
+            <a href="#for-safety" className="hover:text-[color:var(--text)]" data-testid="link-for-safety">
+              For Safety
             </a>
             <a href="#pricing" className="hover:text-[color:var(--text)]" data-testid="link-pricing">
               Pricing
@@ -92,13 +92,14 @@ export default function Landing() {
             <Link href="/login" className="hover:text-[color:var(--text)]" data-testid="link-login">
               Login
             </Link>
-            <button 
-              className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
-              data-testid="button-book-demo"
-              onClick={() => console.log("Book demo clicked")}
-            >
-              Book a demo
-            </button>
+            <Link href="/login">
+              <button 
+                className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
+                data-testid="button-create-account-header"
+              >
+                Create an account
+              </button>
+            </Link>
           </nav>
         </div>
       </header>
@@ -109,24 +110,23 @@ export default function Landing() {
           <div>
             <div className="mb-3 inline-flex items-center rounded-full border border-white/10 bg-[color:var(--canvas)]/80 px-3 py-1 text-xs font-medium text-[color:var(--text-muted)]">
               <span className="mr-2 h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              OSHA training compliance, on autopilot
+              AI-powered OSHA compliance
             </div>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">
-              All your OSHA training records in one smart workspace.
+              Compliance made easy through our AI platform.
             </h1>
             <p className="mt-4 max-w-xl text-[color:var(--text-muted)]">
-              SafetySync.ai keeps every employee's training, expirations, and
-              certificates organized and audit-ready—without brittle
-              spreadsheets or missing paperwork.
+              SafetySync.ai helps safety managers maintain OSHA compliance with intelligent recordkeeping that proves both training completion and worker understanding—not just attendance tracking.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <button 
-                className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
-                data-testid="button-book-live-demo"
-                onClick={() => console.log("Book live demo clicked")}
-              >
-                Book a live demo
-              </button>
+              <Link href="/login">
+                <button 
+                  className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
+                  data-testid="button-create-account-hero"
+                >
+                  Create an account
+                </button>
+              </Link>
               <button 
                 className="hover-elevate active-elevate-2 rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)]"
                 data-testid="button-view-sample"
@@ -136,7 +136,7 @@ export default function Landing() {
               </button>
             </div>
             <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-              Built for safety teams, HR, and training providers.
+              Built for safety managers, with HR collaboration support.
             </p>
           </div>
 
@@ -241,11 +241,10 @@ export default function Landing() {
         {/* Features */}
         <section id="features" className="mt-20">
           <h2 className="text-2xl font-semibold">
-            Everything you need to prove training happened.
+            Document learning outcomes, not just attendance.
           </h2>
           <p className="mt-3 max-w-2xl text-[color:var(--text-muted)]">
-            From field crews to plant operators, see who's trained, what's
-            expiring, and what's missing—without digging for paperwork.
+            SafetySync.ai helps you prove that workers learned and understood required training—the documentation inspectors and auditors actually need for compliance.
           </p>
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
@@ -267,28 +266,25 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* For HR */}
+        {/* For Safety */}
         <section
-          id="for-hr"
+          id="for-safety"
           className="mt-20 grid gap-10 border-t border-[color:var(--border-custom)] pt-12 lg:grid-cols-2"
         >
           <div>
             <h2 className="text-2xl font-semibold">
-              Built for HR teams who secretly own compliance.
+              Built for safety managers who own compliance.
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              HR is usually the one asked to "pull training records" on short
-              notice. SafetySync.ai connects training data to people data so
-              you're not chasing instructors or digging through old folders.
+              Safety and EHS teams are responsible for OSHA compliance. SafetySync.ai gives you the tools to maintain compliant records, coordinate with HR on personnel changes, and respond confidently to inspections.
             </p>
-            <ul className="mt-5 space-y-3 text-sm text-[color:var(--text-muted)]">
-              <li>• See who's out of compliance by location, role, or department.</li>
+            <ul className="mt-5 space-y-3 text-[color:var(--text-muted)]">
+              <li>• Track compliance status by location, role, or OSHA standard.</li>
               <li>
-                • Keep terminations, new hires, and transfers in sync with
-                required training.
+                • Collaborate with HR to keep training current through personnel changes.
               </li>
               <li>
-                • Hand OSHA inspectors clean reports instead of raw spreadsheets.
+                • Generate inspection-ready reports that document learning outcomes.
               </li>
             </ul>
           </div>
@@ -348,17 +344,14 @@ export default function Landing() {
           </GlassCard>
         </section>
 
-        {/* Compliance clarification */}
+        {/* AI Trust & Compliance */}
         <section className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl font-semibold">
-              We manage your records, not your training content.
+              Transparent AI that supports your expertise.
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              SafetySync.ai is a recordkeeping and documentation platform—not a
-              training course provider. We help you track, organize, and prove
-              that OSHA-required training happened. You still work with your
-              preferred instructors and course providers.
+              Our AI assists with documentation and compliance tracking—not replacing safety expertise, but enhancing it. SafetySync.ai is a compliance platform, not a training provider. We help you maintain audit-ready records that prove learning outcomes while you continue working with your trusted instructors and training programs.
             </p>
           </div>
         </section>
@@ -381,13 +374,14 @@ export default function Landing() {
                     <li key={bullet}>✓ {bullet}</li>
                   ))}
                 </ul>
-                <button 
-                  className="mt-6 w-full rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
-                  data-testid={`button-get-pricing-${tier.name.toLowerCase()}`}
-                  onClick={() => console.log(`Get pricing for ${tier.name} clicked`)}
-                >
-                  Get pricing & book demo
-                </button>
+                <Link href="/login">
+                  <button 
+                    className="mt-6 w-full rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
+                    data-testid={`button-get-started-${tier.name.toLowerCase()}`}
+                  >
+                    Get started
+                  </button>
+                </Link>
               </GlassCard>
             ))}
           </div>
@@ -396,18 +390,19 @@ export default function Landing() {
         {/* Final CTA */}
         <section className="mt-20 text-center">
           <h2 className="text-3xl font-semibold">
-            Ready to get audit-ready?
+            Ready to simplify compliance?
           </h2>
           <p className="mt-3 text-[color:var(--text-muted)]">
-            Book a 20-minute demo and see how SafetySync.ai works for your team.
+            Create your account and start managing OSHA training compliance the modern way.
           </p>
-          <button 
-            className="mt-6 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-base font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
-            data-testid="button-final-cta"
-            onClick={() => console.log("Final CTA clicked")}
-          >
-            Schedule your demo
-          </button>
+          <Link href="/login">
+            <button 
+              className="mt-6 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-base font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
+              data-testid="button-final-cta"
+            >
+              Create an account
+            </button>
+          </Link>
         </section>
 
         {/* Footer */}

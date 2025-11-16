@@ -56,7 +56,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = req.body;
 
-      const user = await storage.getUserByEmail(email);
+      // Try to find user by email first, then by username
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        user = await storage.getUserByUsername(email); // email field can contain username
+      }
+      
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
