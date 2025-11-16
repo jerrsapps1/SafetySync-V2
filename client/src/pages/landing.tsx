@@ -108,11 +108,7 @@ export default function Landing() {
         {/* Hero */}
         <section className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center">
           <div>
-            <div className="mb-3 inline-flex items-center rounded-full border border-white/10 bg-[color:var(--canvas)]/80 px-3 py-1 text-xs font-medium text-[color:var(--text-muted)]">
-              <span className="mr-2 h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              AI-powered OSHA compliance
-            </div>
-            <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
               AI-powered OSHA compliance you can trust
             </h1>
             <p className="mt-4 max-w-xl text-[color:var(--text-muted)]">
@@ -159,13 +155,10 @@ export default function Landing() {
         >
           <div className="max-w-3xl">
             <h2 className="text-2xl font-semibold">
-              Spreadsheets weren't built for OSHA audits.
+              Spreadsheets aren't enough to document learning and understanding.
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              When training records are scattered across spreadsheets, paper
-              files, and inboxes, you're always one missing certificate away
-              from a bad day with an inspector. SafetySync.ai gives you a single
-              source of truth for OSHA 1910 and 1926 training.
+              Training information often gets buried across multiple files and versions. SafetySync.ai brings everything together so you can clearly document what training was delivered, how understanding was evaluated, and where compliance stands today.
             </p>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -377,7 +370,7 @@ export default function Landing() {
                     className="mt-6 w-full rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
                     data-testid={`button-get-started-${tier.name.toLowerCase()}`}
                   >
-                    Get started
+                    Create an account
                   </button>
                 </Link>
               </GlassCard>
