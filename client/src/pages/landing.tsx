@@ -192,8 +192,8 @@ export default function Landing() {
                 className="hover-elevate active-elevate-2"
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-md shadow-sky-500/30 flex items-center justify-center">
-                    <feature.Icon className="h-5 w-5 text-white" />
+                  <div className="flex-shrink-0 h-10 w-10 rounded-md border border-sky-500/30 bg-sky-500/5 flex items-center justify-center">
+                    <feature.Icon className="h-5 w-5 text-sky-400" />
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold">{feature.title}</h3>
