@@ -1,6 +1,14 @@
 import { Link } from "wouter";
+import { useState } from "react";
 import GlassCard from "@/components/GlassCard";
-import { BookOpen, Bell, CreditCard, Users, Building2, FileText } from "lucide-react";
+import { BookOpen, Bell, CreditCard, Users, Building2, FileText, Play } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const currentYear = new Date().getFullYear();
 
@@ -69,6 +77,8 @@ const tiers = [
 ];
 
 export default function Landing() {
+  const [demoOpen, setDemoOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)]">
       {/* Header */}
@@ -126,10 +136,10 @@ export default function Landing() {
               </Link>
               <button 
                 className="hover-elevate active-elevate-2 rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)]"
-                data-testid="button-view-sample"
-                onClick={() => console.log("View sample workspace clicked")}
+                data-testid="button-see-demo"
+                onClick={() => setDemoOpen(true)}
               >
-                View sample workspace
+                See Demo
               </button>
             </div>
             <p className="mt-3 text-xs text-[color:var(--text-muted)]">
@@ -474,6 +484,39 @@ export default function Landing() {
           </div>
         </footer>
       </main>
+
+      {/* Demo Modal */}
+      <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>SafetySync.ai Demo</DialogTitle>
+            <DialogDescription>
+              See how SafetySync.ai helps you maintain OSHA compliance
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Placeholder for future video/animation */}
+          <div className="aspect-video rounded-lg border border-white/10 bg-gradient-to-br from-[#161b22] to-[#0d1117] flex flex-col items-center justify-center p-12">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-indigo-500/20 via-sky-500/20 to-emerald-400/20 border border-sky-500/30 flex items-center justify-center mb-4">
+              <Play className="h-8 w-8 text-sky-400 ml-1" />
+            </div>
+            <h3 className="text-lg font-semibold text-center">Demo Coming Soon</h3>
+            <p className="mt-2 text-sm text-[color:var(--text-muted)] text-center max-w-md">
+              We're preparing an interactive demo to show you how SafetySync.ai streamlines OSHA compliance tracking. 
+              In the meantime, create an account to explore the platform.
+            </p>
+            <Link href="/login">
+              <button 
+                className="mt-6 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
+                data-testid="button-demo-modal-signup"
+                onClick={() => setDemoOpen(false)}
+              >
+                Create an account
+              </button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
