@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import GlassCard from "@/components/GlassCard";
+import { BookOpen, Bell, CreditCard, Users, Building2, FileText } from "lucide-react";
 
 const currentYear = new Date().getFullYear();
 
@@ -8,37 +9,37 @@ const features = [
     title: "Smart training recordkeeping",
     description:
       "Keep every employee's OSHA 1910 & 1926 training in one place—no more scattered spreadsheets or shared drives.",
-    icon: "📚",
+    Icon: BookOpen,
   },
   {
     title: "Automated expirations & reminders",
     description:
       "Track expiration dates and send proactive reminders before workers fall out of compliance.",
-    icon: "⏰",
+    Icon: Bell,
   },
   {
     title: "Instant certs & wallet cards",
     description:
       "Generate professional certificates and wallet cards that are always available and easy to re-issue.",
-    icon: "🎫",
+    Icon: CreditCard,
   },
   {
     title: "HR + Safety shared workspace",
     description:
       "Give HR and EHS teams a single source of truth for training status, roles, and locations.",
-    icon: "🤝",
+    Icon: Users,
   },
   {
     title: "Construction & general industry",
     description:
       "Built for both OSHA 1910 and 1926 so you can manage multiple divisions without duct-taped systems.",
-    icon: "🏗️",
+    Icon: Building2,
   },
   {
     title: "Audit-ready exports in minutes",
     description:
       "Pull clean, inspector-ready reports by company, site, or role with just a few clicks.",
-    icon: "📄",
+    Icon: FileText,
   },
 ];
 
@@ -191,7 +192,9 @@ export default function Landing() {
                 className="hover-elevate active-elevate-2"
               >
                 <div className="flex items-start gap-3">
-                  <div className="mt-1 text-xl">{feature.icon}</div>
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-md shadow-sky-500/30 flex items-center justify-center">
+                    <feature.Icon className="h-5 w-5 text-white" />
+                  </div>
                   <div>
                     <h3 className="text-sm font-semibold">{feature.title}</h3>
                     <p className="mt-2 text-sm text-[color:var(--text-muted)]">
