@@ -293,7 +293,7 @@ export default function Landing() {
               Built for safety managers who lead compliance.
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Safety and EHS teams are ultimately responsible for OSHA compliance. SafetySync.ai gives you the tools to maintain clear, defensible records, coordinate with HR as people move and change roles, and respond confidently to inspections.
+              EHS teams are ultimately responsible for OSHA compliance. SafetySync.ai gives you the tools to maintain clear, defensible records, coordinate with HR as people move and change roles, and respond confidently to inspections.
             </p>
             <ul className="mt-5 space-y-3 text-sm text-[color:var(--text-muted)]">
               <li>• Track compliance status by location, role, or OSHA standard</li>
