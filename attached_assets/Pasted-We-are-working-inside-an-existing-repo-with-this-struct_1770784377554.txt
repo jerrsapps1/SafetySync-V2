@@ -1,0 +1,194 @@
+We are working inside an existing repo with this structure:
+
+- client/src/App.tsx uses wouter routing
+- existing pages: client/src/pages/landing.tsx, login.tsx, dashboard.tsx, employees.tsx
+- UI components exist under client/src/components/ui/*
+- Tailwind is configured with darkMode: ["class"]
+
+TASK: Extend the CURRENT app (do not create a separate /v2 folder) to become a clickable “V2 prototype” while keeping the current design language/components.
+
+HARD RULES
+- Do NOT delete or rewrite the app from scratch.
+- Do NOT change routing library (keep wouter).
+- No HR features or HR wording.
+- Never use the word “tenant” anywhere. Use “organization” or “company account”.
+- Add dark/light theme toggle (default dark).
+- Add language toggle EN ⇄ Español (México).
+  - When Spanish selected, ALL UI text across ALL pages must be Spanish (México).
+  - Spanish must be simple like a 10-year-old can understand, but still natural Mexico Spanish.
+  - No leftover English strings anywhere (buttons, labels, empty states, modals, toasts).
+- Only key analytics (minimal): Employees, Training Records, Certificates, Expiring Soon.
+- Add branding: “Powered by: SyncAi” in the header and in the footer (subtle, consistent with current design).
+
+STEP 1 — Global Theme + Language (must be done first)
+1) Create:
+   - client/src/contexts/ThemeContext.tsx (or /contexts/theme.tsx)
+   - client/src/contexts/I18nContext.tsx (dictionary-based translations, no heavy libraries)
+2) Store theme + language in localStorage.
+3) Apply theme by toggling the “dark” class on <html>.
+4) Add Theme toggle + Language toggle in a shared top nav component (create if needed):
+   - client/src/components/TopNav.tsx (or similar)
+5) Ensure Landing, Login, Dashboard, Employees already use translated strings from the i18n dictionary.
+
+STEP 2 — Organization selector (no “tenant”)
+Add a simple organization selector in the top nav:
+- “Organization” dropdown with at least:
+  - Demo Construction Co.
+  - Demo Industrial Co.
+Store active organization in context (OrganizationContext) and filter mock data by it.
+
+STEP 3 — Mock DB + Mock API (async)
+Create:
+- client/src/mock/db.ts with seed data:
+  - organizations (2)
+  - employees (10–12 split across orgs)
+  - documents (6–10 with statuses: Processing, Needs Review, Approved, Rejected)
+  - trainingRecords
+  - certificates
+  - walletCards
+  - supportTickets (owner page)
+- client/src/mock/api.ts with async functions using setTimeout delay:
+  getOrganizations(), setActiveOrganization()
+  listEmployees(orgId), getEmployee(id), createEmployee(orgId,payload), updateEmployee(id,payload)
+  listDocuments(orgId), uploadDocument(orgId,fileMeta), getDocument(id)
+  reviewDocument(id, edits)
+  approveDocument(id) -> creates trainingRecords + certificates + walletCards
+  rejectDocument(id, reason)
+  listCertificates(orgId), createCertificate(payload)
+  listWalletCards(orgId), createWalletCard(payload)
+  listSupportTickets(), updateTicketStatus(id,status), addTicketNote(id,note)
+
+STEP 4 — Expand routes (keep wouter)
+Update client/src/App.tsx Router to add these routes:
+
+Public:
+- / (landing)
+- /login
+- /features
+- /pricing
+- /demo
+- /security
+
+App:
+- /dashboard (existing)
+- /employees (existing)
+- /employees/:id (new employee profile)
+- /documents (new)
+- /certificates (new)
+- /wallet-cards (new)
+- /compliance (new)
+- /settings (new)
+
+Owner Admin:
+- /owner/dashboard (new)
+- /owner/support (new)
+
+Do not break existing routes.
+
+STEP 5 — Implement pages with current design system
+
+A) Dashboard (key analytics only)
+Update dashboard.tsx to show ONLY:
+- Employees
+- Training Records
+- Certificates Generated
+- Expiring Soon (next 30 days)
+Also:
+- Compliance Status: “Good” or “Needs Attention” (based on expiringSoon > 0)
+- Recent activity list (mock)
+
+B) Employees
+- employees.tsx remains list page with table + Add Employee modal.
+- Create employee profile page:
+  client/src/pages/employee-profile.tsx (or pages/employees/[id].tsx style, but keep it simple)
+  Sections:
+    - Training history (table)
+    - Certificates (list, fake download button)
+    - Wallet cards (list, fake download button)
+  Actions:
+    - Add Training Record modal
+    - Generate Certificate wizard modal (creates mock entry)
+    - Generate Wallet Card wizard modal (creates mock entry)
+  Wallet card UI MUST show:
+    - training date
+    - expiration date (field must exist and display)
+    - preview block styled like 480x280 card
+
+C) Documents (AI ingestion prototype)
+Create documents page:
+- Upload box (drag-drop UI, mock)
+- Document list with status badges
+- Clicking a Needs Review doc opens review panel/modal:
+  editable fields:
+    course name
+    completion date
+    instructor name
+    OSHA standard (free text)
+    trainee list (multi-select employees in current org)
+  Buttons:
+    Approve -> approveDocument() creates records + certs + wallet cards and updates:
+      - dashboard counts
+      - employee profile lists
+      - document status
+    Reject -> rejectDocument(reason) status updates
+
+D) Certificates page
+- List with filters: employee, course, date
+- Create Certificate wizard
+- Fake download button
+
+E) Wallet Cards page
+- List + preview component
+- Must show training date + expiration date
+
+F) Compliance page (minimal)
+- Expiring soon list
+- Expired list
+- Simple filters only
+
+G) Settings page
+- Organization profile fields (mock)
+- User profile fields (mock)
+- Theme + language toggles repeated
+- “Powered by: SyncAi”
+
+H) Owner Admin
+Owner Dashboard:
+- organizations count
+- users count (mock)
+- open tickets
+Owner Support:
+- ticket table: category, organization, status, created date
+- status dropdown: Open / In Progress / Resolved
+- internal notes panel (add + view)
+Categories exactly:
+- Login / account issues
+- Training records
+- Certificate generation
+- AI ingestion problems
+- Billing questions
+- Data corrections
+- Feature requests
+
+AUTH (Clickable prototype)
+Use existing AuthContext if present. If it’s minimal, extend it:
+- Login page includes two buttons:
+  - “Sign in as Workspace User”
+  - “Sign in as Owner Admin”
+Store role in localStorage and route user accordingly:
+- Workspace -> /dashboard
+- Owner -> /owner/dashboard
+Guard owner routes so workspace users can’t access them.
+
+QUALITY GATES
+- Every page clickable and navigable.
+- No console errors.
+- No untranslated text when Spanish selected.
+- Keep copy short and simple.
+- Add “Powered by: SyncAi” to header + footer.
+
+DELIVERABLE OUTPUT
+At the end, print:
+1) list of files added/changed
+2) how to test the main workflow:
+   Documents -> review -> approve -> check dashboard updates + employee profile shows new certificate and wallet card

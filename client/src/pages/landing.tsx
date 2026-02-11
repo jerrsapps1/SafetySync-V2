@@ -1,7 +1,10 @@
 import { Link } from "wouter";
 import { useState } from "react";
 import GlassCard from "@/components/GlassCard";
-import { BookOpen, Bell, CreditCard, Users, Building2, FileText, Play } from "lucide-react";
+import { BookOpen, Bell, CreditCard, Users, Building2, FileText, Play, Sun, Moon, Languages } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Dialog,
   DialogContent,
@@ -12,72 +15,68 @@ import {
 
 const currentYear = new Date().getFullYear();
 
-const features = [
-  {
-    title: "Smart training recordkeeping",
-    description:
-      "Keep every employee's OSHA 1910 & 1926 training in one place—no more scattered spreadsheets or shared drives.",
-    Icon: BookOpen,
-  },
-  {
-    title: "Automated expirations & reminders",
-    description:
-      "Track expiration dates and send proactive reminders before workers fall out of compliance.",
-    Icon: Bell,
-  },
-  {
-    title: "Instant certs & wallet cards",
-    description:
-      "Generate professional certificates and wallet cards that are always available and easy to re-issue.",
-    Icon: CreditCard,
-  },
-  {
-    title: "HR + Safety shared workspace",
-    description:
-      "Give HR and EHS teams a single source of truth for training status, roles, and locations.",
-    Icon: Users,
-  },
-  {
-    title: "Construction & general industry",
-    description:
-      "Built for both OSHA 1910 and 1926 so you can manage multiple divisions without duct-taped systems.",
-    Icon: Building2,
-  },
-  {
-    title: "Audit-ready exports in minutes",
-    description:
-      "Pull clean, inspector-ready reports by company, site, or role with just a few clicks.",
-    Icon: FileText,
-  },
-];
-
-const pains = [
-  { title: "Spreadsheets everywhere", desc: "Multiple versions, no history, and nobody sure which sheet is the latest." },
-  { title: "No single source of truth", desc: "HR, safety, and operations each keep their own copy of reality." },
-  { title: "Audit prep = panic mode", desc: "Scramble for certificates, sign-in sheets, and proof of training at the worst possible time." },
-  { title: "HR & safety out of sync", desc: "People data changes daily, but training records stay stuck in static files." },
-];
-
-const tiers = [
-  {
-    name: "Essential",
-    blurb: "For small teams getting out of spreadsheets.",
-    bullets: ["Core recordkeeping", "Single company", "Basic reporting"],
-  },
-  {
-    name: "Professional",
-    blurb: "For multi-site contractors and growing teams.",
-    bullets: ["Multi-location support", "Advanced filters", "Team workspaces"],
-  },
-  {
-    name: "Enterprise",
-    blurb: "For complex organizations and training providers.",
-    bullets: ["Multi-tenant support", "Custom exports", "Dedicated onboarding"],
-  },
-];
-
 export default function Landing() {
   const [demoOpen, setDemoOpen] = useState(false);
+  const { t, toggleLang } = useI18n();
+  const { theme, toggleTheme } = useTheme();
+
+  const features = [
+    {
+      title: t("landing.feat1Title"),
+      description: t("landing.feat1Desc"),
+      Icon: BookOpen,
+    },
+    {
+      title: t("landing.feat2Title"),
+      description: t("landing.feat2Desc"),
+      Icon: Bell,
+    },
+    {
+      title: t("landing.feat3Title"),
+      description: t("landing.feat3Desc"),
+      Icon: CreditCard,
+    },
+    {
+      title: t("landing.feat4Title"),
+      description: t("landing.feat4Desc"),
+      Icon: Users,
+    },
+    {
+      title: t("landing.feat5Title"),
+      description: t("landing.feat5Desc"),
+      Icon: Building2,
+    },
+    {
+      title: t("landing.feat6Title"),
+      description: t("landing.feat6Desc"),
+      Icon: FileText,
+    },
+  ];
+
+  const pains = [
+    { title: t("landing.pain1Title"), desc: t("landing.pain1Desc") },
+    { title: t("landing.pain2Title"), desc: t("landing.pain2Desc") },
+    { title: t("landing.pain3Title"), desc: t("landing.pain3Desc") },
+    { title: t("landing.pain4Title"), desc: t("landing.pain4Desc") },
+  ];
+
+  const tiers = [
+    {
+      name: t("landing.starter"),
+      blurb: t("landing.tierBlurb1"),
+      bullets: [t("landing.tierBullet1a"), t("landing.tierBullet1b"), t("landing.tierBullet1c")],
+    },
+    {
+      name: t("landing.professional"),
+      blurb: t("landing.tierBlurb2"),
+      bullets: [t("landing.tierBullet2a"), t("landing.tierBullet2b"), t("landing.tierBullet2c")],
+    },
+    {
+      name: t("landing.enterprise"),
+      blurb: t("landing.tierBlurb3"),
+      bullets: [t("landing.tierBullet3a"), t("landing.tierBullet3b"), t("landing.tierBullet3c")],
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)]">
@@ -92,23 +91,29 @@ export default function Landing() {
           </div>
           <nav className="hidden items-center gap-6 text-sm text-[color:var(--text-muted)] md:flex">
             <a href="#features" className="hover:text-[color:var(--text)]" data-testid="link-features">
-              Features
+              {t("landing.features")}
             </a>
             <a href="#for-safety" className="hover:text-[color:var(--text)]" data-testid="link-for-safety">
-              For Safety
+              {t("landing.forSafety")}
             </a>
             <a href="#pricing" className="hover:text-[color:var(--text)]" data-testid="link-pricing">
-              Pricing
+              {t("landing.pricing")}
             </a>
             <Link href="/login" className="hover:text-[color:var(--text)]" data-testid="link-login">
-              Login
+              {t("landing.login")}
             </Link>
+            <Button variant="ghost" size="icon" onClick={toggleLang} data-testid="button-toggle-lang">
+              <Languages className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={toggleTheme} data-testid="button-toggle-theme">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Link href="/login">
               <button 
                 className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
                 data-testid="button-create-account-header"
               >
-                Create an account
+                {t("landing.createAccount")}
               </button>
             </Link>
           </nav>
@@ -154,10 +159,10 @@ export default function Landing() {
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center">
             <div>
               <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                AI-powered OSHA compliance you can trust
+                {t("landing.heroTitle")}
               </h1>
               <p className="mt-4 max-w-xl text-[color:var(--text-muted)]">
-                Clear, inspection-ready documentation that shows training, understanding, and compliance—organized automatically.
+                {t("landing.heroDesc")}
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <Link href="/login">
@@ -165,7 +170,7 @@ export default function Landing() {
                     className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
                     data-testid="button-create-account-hero"
                   >
-                    Create an account
+                    {t("landing.createAccount")}
                   </button>
                 </Link>
                 <button 
@@ -173,11 +178,11 @@ export default function Landing() {
                   data-testid="button-see-demo"
                   onClick={() => setDemoOpen(true)}
                 >
-                  See Demo
+                  {t("landing.seeDemo")}
                 </button>
               </div>
               <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-                Built for safety managers first, with HR collaboration support.
+                {t("landing.builtForManagers")}
               </p>
             </div>
 
@@ -185,9 +190,9 @@ export default function Landing() {
             <div className="mt-8 lg:mt-0">
               <GlassCard className="p-8 text-center">
                 <div className="mx-auto h-24 w-24 rounded-2xl bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-2xl shadow-sky-500/40" />
-                <h3 className="mt-6 text-lg font-semibold">Documentation You Can Trust</h3>
+                <h3 className="mt-6 text-lg font-semibold">{t("landing.heroCardTitle")}</h3>
                 <p className="mt-2 text-sm text-[color:var(--text-muted)]">
-                  Training records, understanding verification, and compliance status—all in one clear system.
+                  {t("landing.heroCardDesc")}
                 </p>
               </GlassCard>
             </div>
@@ -203,10 +208,10 @@ export default function Landing() {
         >
           <div className="max-w-3xl">
             <h2 className="text-2xl font-semibold">
-              Spreadsheets aren't enough to document learning and understanding.
+              {t("landing.painTitle")}
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Training information often gets buried across multiple files and versions. SafetySync.ai brings everything together so you can clearly document what training was delivered, how understanding was evaluated, and where compliance stands today.
+              {t("landing.painDesc")}
             </p>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -227,10 +232,10 @@ export default function Landing() {
         {/* Features */}
         <section id="features" className="mt-20">
           <h2 className="text-2xl font-semibold">
-            Document learning and understanding.
+            {t("landing.featSectionTitle")}
           </h2>
           <p className="mt-3 max-w-2xl text-[color:var(--text-muted)]">
-            SafetySync.ai helps you document that required training was delivered, how understanding was evaluated, and how readiness was demonstrated—so you can show inspectors clear evidence of compliance, not just names on a sign-in sheet.
+            {t("landing.featSectionDesc")}
           </p>
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
@@ -258,31 +263,31 @@ export default function Landing() {
         <section className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
           <div className="text-center max-w-3xl mx-auto mb-8">
             <h2 className="text-2xl font-semibold">
-              See compliance status at a glance.
+              {t("landing.howItWorks")}
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Track who's trained, what's expiring, and what needs attention—all in one clear view.
+              {t("landing.howItWorksDesc")}
             </p>
           </div>
           <GlassCard>
             <div className="mb-4 flex items-center justify-between text-xs text-[color:var(--text-muted)]">
-              <span>Training overview · Demo company</span>
+              <span>{t("landing.tableOverview")}</span>
               <span>OSHA 1910 · OSHA 1926</span>
             </div>
             <div className="overflow-hidden rounded-xl border border-white/10 bg-[color:var(--canvas)]/70">
               <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] border-b border-white/5 bg-white/5 px-3 py-2 text-[11px] text-[color:var(--text-muted)]">
-                <span>Employee</span>
-                <span>Role / Site</span>
-                <span>Standard</span>
-                <span>Status</span>
-                <span className="text-right">Expiration</span>
+                <span>{t("landing.tableEmployee")}</span>
+                <span>{t("landing.tableRoleSite")}</span>
+                <span>{t("landing.tableStandard")}</span>
+                <span>{t("landing.tableStatus")}</span>
+                <span className="text-right">{t("landing.tableExpiration")}</span>
               </div>
               {[
                 {
                   name: "Maria Lopez",
                   role: "Foreman · Site A",
                   std: "OSHA 30 · 1926",
-                  status: "Up to date",
+                  status: t("landing.statusUpToDate"),
                   badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
                   exp: "2026-03-14",
                 },
@@ -290,7 +295,7 @@ export default function Landing() {
                   name: "James Carter",
                   role: "Laborer · Site B",
                   std: "OSHA 10 · 1926",
-                  status: "Expires in 14 days",
+                  status: t("landing.statusExpiresIn14"),
                   badge: "bg-amber-500/15 text-amber-300 border-amber-500/40",
                   exp: "2025-12-01",
                 },
@@ -298,7 +303,7 @@ export default function Landing() {
                   name: "Alex Nguyen",
                   role: "Maintenance · Plant 1",
                   std: "LOTO · 1910",
-                  status: "Expired",
+                  status: t("landing.statusExpired"),
                   badge: "bg-rose-500/15 text-rose-300 border-rose-500/40",
                   exp: "2025-09-30",
                 },
@@ -337,34 +342,34 @@ export default function Landing() {
         >
           <div>
             <h2 className="text-2xl font-semibold">
-              Built for safety managers who lead compliance.
+              {t("landing.safetyTitle")}
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              EHS teams are ultimately responsible for OSHA compliance. SafetySync.ai gives you the tools to maintain clear, defensible records, coordinate with HR as people move and change roles, and respond confidently to inspections.
+              {t("landing.safetyDesc")}
             </p>
             <ul className="mt-5 space-y-3 text-sm text-[color:var(--text-muted)]">
-              <li>• Track compliance status by location, role, or OSHA standard</li>
-              <li>• Coordinate with HR as people move and change roles</li>
-              <li>• Generate inspection-ready reports that document learning outcomes</li>
+              <li>• {t("landing.safetyBullet1")}</li>
+              <li>• {t("landing.safetyBullet2")}</li>
+              <li>• {t("landing.safetyBullet3")}</li>
             </ul>
           </div>
           <GlassCard>
             <div className="mb-4">
-              <h3 className="text-sm font-semibold">Compliance overview</h3>
-              <p className="text-xs text-[color:var(--text-muted)]">Current status across all locations</p>
+              <h3 className="text-sm font-semibold">{t("landing.complianceOverview")}</h3>
+              <p className="text-xs text-[color:var(--text-muted)]">{t("landing.complianceCurrentStatus")}</p>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="text-3xl font-semibold text-emerald-400">92%</div>
-                <div className="mt-1 text-xs text-[color:var(--text-muted)]">Compliant</div>
+                <div className="mt-1 text-xs text-[color:var(--text-muted)]">{t("landing.compliant")}</div>
               </div>
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="text-3xl font-semibold text-amber-400">27</div>
-                <div className="mt-1 text-xs text-[color:var(--text-muted)]">Expiring soon</div>
+                <div className="mt-1 text-xs text-[color:var(--text-muted)]">{t("landing.expiringSoonLabel")}</div>
               </div>
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <div className="text-3xl font-semibold text-rose-400">14</div>
-                <div className="mt-1 text-xs text-[color:var(--text-muted)]">Overdue</div>
+                <div className="mt-1 text-xs text-[color:var(--text-muted)]">{t("landing.overdue")}</div>
               </div>
             </div>
           </GlassCard>
@@ -374,13 +379,11 @@ export default function Landing() {
         <section className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
           <GlassCard className="max-w-3xl mx-auto text-center">
             <p className="text-lg italic text-[color:var(--text)]">
-              "We went from three days of panic before an OSHA audit to pulling
-              everything in 10 minutes. SafetySync.ai gave us confidence we
-              never had with spreadsheets."
+              "{t("landing.testimonial")}"
             </p>
             <div className="mt-4">
               <p className="font-semibold">Sarah Mitchell</p>
-              <p className="text-sm text-[color:var(--text-muted)]">EHS Manager, Apex Construction</p>
+              <p className="text-sm text-[color:var(--text-muted)]">{t("landing.testimonialAuthor")}</p>
             </div>
           </GlassCard>
         </section>
@@ -389,10 +392,10 @@ export default function Landing() {
         <section className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl font-semibold">
-              Transparent AI that supports your expertise.
+              {t("landing.aiTitle")}
             </h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Our AI assists with documentation and compliance tracking—it doesn't replace safety expertise or make decisions for you. You stay in control of training content and standards while our AI helps you maintain clear, audit-ready records that reflect how learning and understanding were evaluated.
+              {t("landing.aiDesc")}
             </p>
           </div>
         </section>
@@ -400,9 +403,9 @@ export default function Landing() {
         {/* Pricing */}
         <section id="pricing" className="mt-20 border-t border-[color:var(--border-custom)] pt-12">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold">Simple, transparent pricing</h2>
+            <h2 className="text-2xl font-semibold">{t("landing.pricingTitle")}</h2>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Choose the plan that fits your team
+              {t("landing.pricingDesc")}
             </p>
           </div>
           <div className="mt-8 grid gap-6 md:grid-cols-3">
@@ -420,7 +423,7 @@ export default function Landing() {
                     className="mt-6 w-full rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
                     data-testid={`button-get-started-${tier.name.toLowerCase()}`}
                   >
-                    Create an account
+                    {t("landing.createAccount")}
                   </button>
                 </Link>
               </GlassCard>
@@ -431,17 +434,17 @@ export default function Landing() {
         {/* Final CTA */}
         <section className="mt-20 text-center">
           <h2 className="text-3xl font-semibold">
-            Ready to simplify compliance?
+            {t("landing.ctaTitle")}
           </h2>
           <p className="mt-3 text-[color:var(--text-muted)]">
-            Create your account and start managing OSHA training compliance the modern way.
+            {t("landing.ctaDesc")}
           </p>
           <Link href="/login">
             <button 
               className="mt-6 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-base font-medium text-white shadow-lg shadow-orange-500/30 hover-elevate active-elevate-2"
               data-testid="button-final-cta"
             >
-              Create an account
+              {t("landing.createAccount")}
             </button>
           </Link>
         </section>
@@ -462,26 +465,26 @@ export default function Landing() {
 
             {/* Product Links */}
             <div>
-              <h4 className="text-sm font-semibold mb-4">Product</h4>
+              <h4 className="text-sm font-semibold mb-4">{t("landing.footerProduct")}</h4>
               <ul className="space-y-2 text-sm text-[color:var(--text-muted)]">
                 <li>
                   <a href="#features" className="hover:text-[color:var(--text)]" data-testid="footer-link-features">
-                    Features
+                    {t("landing.features")}
                   </a>
                 </li>
                 <li>
                   <a href="#pricing" className="hover:text-[color:var(--text)]" data-testid="footer-link-pricing">
-                    Pricing
+                    {t("landing.pricing")}
                   </a>
                 </li>
                 <li>
                   <Link href="/login" className="hover:text-[color:var(--text)]" data-testid="footer-link-login">
-                    Login
+                    {t("landing.login")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/login" className="hover:text-[color:var(--text)]" data-testid="footer-link-signup">
-                    Create an account
+                    {t("landing.createAccount")}
                   </Link>
                 </li>
               </ul>
@@ -489,26 +492,26 @@ export default function Landing() {
 
             {/* Company Links */}
             <div>
-              <h4 className="text-sm font-semibold mb-4">Company</h4>
+              <h4 className="text-sm font-semibold mb-4">{t("landing.footerCompany")}</h4>
               <ul className="space-y-2 text-sm text-[color:var(--text-muted)]">
                 <li>
                   <a href="#about" className="hover:text-[color:var(--text)]" data-testid="footer-link-about">
-                    About
+                    {t("landing.about")}
                   </a>
                 </li>
                 <li>
                   <a href="#contact" className="hover:text-[color:var(--text)]" data-testid="footer-link-contact">
-                    Contact
+                    {t("landing.contact")}
                   </a>
                 </li>
                 <li>
                   <a href="#privacy" className="hover:text-[color:var(--text)]" data-testid="footer-link-privacy">
-                    Privacy
+                    {t("landing.privacy")}
                   </a>
                 </li>
                 <li>
                   <a href="#terms" className="hover:text-[color:var(--text)]" data-testid="footer-link-terms">
-                    Terms
+                    {t("landing.terms")}
                   </a>
                 </li>
               </ul>
@@ -517,7 +520,7 @@ export default function Landing() {
 
           {/* Copyright */}
           <div className="mt-12 pt-8 border-t border-white/5 text-center text-xs text-[color:var(--text-muted)]">
-            © {currentYear} SafetySync.ai. All rights reserved.
+            © {currentYear} SafetySync.ai. {t("landing.allRightsReserved")}
           </div>
         </footer>
       </main>
@@ -526,9 +529,9 @@ export default function Landing() {
       <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>SafetySync.ai demo preview</DialogTitle>
+            <DialogTitle>{t("landing.demoTitle")}</DialogTitle>
             <DialogDescription>
-              See how SafetySync.ai helps you document training, understanding, and OSHA compliance.
+              {t("landing.demoSubtitle")}
             </DialogDescription>
           </DialogHeader>
           
@@ -537,12 +540,12 @@ export default function Landing() {
             <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-indigo-500/20 via-sky-500/20 to-emerald-400/20 border border-sky-500/30 flex items-center justify-center mb-4">
               <Play className="h-8 w-8 text-sky-400 ml-1" />
             </div>
-            <h3 className="text-lg font-semibold text-center">Demo preview coming soon</h3>
+            <h3 className="text-lg font-semibold text-center">{t("landing.demoComingSoon")}</h3>
             <p className="mt-2 text-sm text-[color:var(--text-muted)] text-center max-w-md">
-              We're preparing a short visual walkthrough of how safety teams use SafetySync.ai to organize OSHA 1910 & 1926 training documentation and understanding checks in one place.
+              {t("landing.demoDesc")}
             </p>
             <p className="mt-2 text-sm text-[color:var(--text-muted)] text-center max-w-md">
-              Until then, you can create an account to explore the workspace structure and see how the platform is organized.
+              {t("landing.demoDesc2")}
             </p>
             <div className="mt-6 flex items-center gap-3">
               <Link href="/login">
@@ -551,7 +554,7 @@ export default function Landing() {
                   data-testid="button-demo-modal-signup"
                   onClick={() => setDemoOpen(false)}
                 >
-                  Create an account
+                  {t("landing.createAccount")}
                 </button>
               </Link>
               <button 
@@ -559,7 +562,7 @@ export default function Landing() {
                 data-testid="button-demo-modal-close"
                 onClick={() => setDemoOpen(false)}
               >
-                Close
+                {t("common.close")}
               </button>
             </div>
           </div>

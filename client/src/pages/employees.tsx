@@ -1,238 +1,194 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
-import GlassCard from "@/components/GlassCard";
+import { useState, useEffect } from "react";
+import { useLocation, Link } from "wouter";
+import { useI18n } from "@/contexts/I18nContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import { listEmployees, createEmployee } from "@/mock/api";
+import type { MockEmployee } from "@/mock/db";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Employee, Location } from "@shared/schema";
 
 export default function Employees() {
-  const [, setPathLocation] = useLocation();
-  const { user, logout } = useAuth();
+  const { t } = useI18n();
+  const { activeOrg } = useOrganization();
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
-  const { data: employees, isLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees"],
-    enabled: !!user,
-  });
+  const [employees, setEmployees] = useState<MockEmployee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data: locations } = useQuery<Location[]>({
-    queryKey: ["/api/locations"],
-    enabled: !!user,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      role: string;
-      locationId?: string;
-    }) => {
-      await apiRequest("POST", "/api/employees", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      setIsDialogOpen(false);
-      toast({ title: "Employee created successfully" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Failed to create employee", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    createMutation.mutate({
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      email: formData.get("email") as string,
-      role: formData.get("role") as string,
-      locationId: formData.get("locationId") as string || undefined,
-      status: "active",
-    } as any);
+  const loadEmployees = async () => {
+    setLoading(true);
+    try {
+      const data = await listEmployees(activeOrg.id);
+      setEmployees(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLogout = () => {
-    logout();
-    setPathLocation("/");
+  useEffect(() => {
+    loadEmployees();
+  }, [activeOrg.id]);
+
+  const filtered = employees.filter((emp) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(q) ||
+      emp.email.toLowerCase().includes(q) ||
+      emp.role.toLowerCase().includes(q)
+    );
+  });
+
+  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    try {
+      await createEmployee(activeOrg.id, {
+        firstName: fd.get("firstName") as string,
+        lastName: fd.get("lastName") as string,
+        email: fd.get("email") as string,
+        role: fd.get("role") as string,
+        status: "active",
+      });
+      toast({ title: t("employees.createSuccess") });
+      setDialogOpen(false);
+      loadEmployees();
+    } catch {
+      toast({ title: t("employees.createFailed"), variant: "destructive" });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] p-4">
-      <div className="mx-auto max-w-7xl pt-6">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-md shadow-sky-500/40" />
-            <span className="text-lg font-semibold tracking-tight">SafetySync.ai</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPathLocation("/dashboard")}
-              data-testid="button-dashboard"
-            >
-              Dashboard
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              data-testid="button-logout"
-            >
-              Logout
-            </Button>
-          </div>
+    <div data-testid="page-employees">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-employees-title">
+            {t("employees.title")}
+          </h1>
+          <p className="text-sm text-muted-foreground" data-testid="text-employees-subtitle">
+            {t("employees.subtitle")}
+          </p>
         </div>
-
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Employees</h1>
-            <p className="text-sm text-[color:var(--text-muted)]">
-              Manage your workforce
-            </p>
-          </div>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-add-employee">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Employee
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-white/10">
-              <DialogHeader>
-                <DialogTitle>Add New Employee</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      required
-                      className="bg-secondary/50 border-white/10"
-                      data-testid="input-firstName"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      required
-                      className="bg-secondary/50 border-white/10"
-                      data-testid="input-lastName"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    className="bg-secondary/50 border-white/10"
-                    data-testid="input-email"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input
-                    id="role"
-                    name="role"
-                    required
-                    placeholder="e.g. Foreman, Laborer, Electrician"
-                    className="bg-secondary/50 border-white/10"
-                    data-testid="input-role"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="locationId">Location (Optional)</Label>
-                  <select
-                    id="locationId"
-                    name="locationId"
-                    className="flex h-10 w-full rounded-md border border-white/10 bg-secondary/50 px-3 py-2 text-sm text-foreground"
-                    data-testid="select-location"
-                  >
-                    <option value="">None</option>
-                    {locations?.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        {loc.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={createMutation.isPending}
-                  data-testid="button-submit"
-                >
-                  {createMutation.isPending ? "Creating..." : "Create Employee"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <GlassCard>
-          {isLoading ? (
-            <div className="text-center py-8 text-[color:var(--text-muted)]">Loading...</div>
-          ) : employees && employees.length > 0 ? (
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-[color:var(--canvas)]/70">
-              <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] border-b border-white/5 bg-white/5 px-3 py-2 text-[11px] text-[color:var(--text-muted)]">
-                <span>Name</span>
-                <span>Role</span>
-                <span>Email</span>
-                <span>Status</span>
-              </div>
-              {employees.map((emp) => (
-                <div
-                  key={emp.id}
-                  className="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] items-center border-t border-white/5 px-3 py-2.5 text-[11px]"
-                  data-testid={`employee-${emp.id}`}
-                >
-                  <div className="font-medium">
-                    {emp.firstName} {emp.lastName}
-                  </div>
-                  <div className="text-[color:var(--text-muted)]">{emp.role}</div>
-                  <div className="text-[color:var(--text-muted)]">{emp.email || "N/A"}</div>
-                  <div>
-                    <span className="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
-                      {emp.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-[color:var(--text-muted)]">
-              No employees found. Add your first employee to get started.
-            </div>
-          )}
-        </GlassCard>
+        <Button onClick={() => setDialogOpen(true)} data-testid="button-add-employee">
+          <Plus className="h-4 w-4 mr-2" />
+          {t("employees.addEmployee")}
+        </Button>
       </div>
+
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder={t("common.search")}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-employees"
+        />
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-muted-foreground" data-testid="text-loading">
+          {t("common.loading")}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground" data-testid="text-no-employees">
+          {t("employees.noEmployees")}
+        </div>
+      ) : (
+        <Card data-testid="card-employees-table">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">{t("employees.title")}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground text-left">
+                    <th className="px-4 py-2 font-medium" data-testid="th-name">{t("common.name")}</th>
+                    <th className="px-4 py-2 font-medium" data-testid="th-role">{t("common.role")}</th>
+                    <th className="px-4 py-2 font-medium" data-testid="th-email">{t("common.email")}</th>
+                    <th className="px-4 py-2 font-medium" data-testid="th-status">{t("common.status")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((emp) => (
+                    <tr
+                      key={emp.id}
+                      className="border-b last:border-b-0 hover-elevate cursor-pointer"
+                      data-testid={`row-employee-${emp.id}`}
+                    >
+                      <td className="px-4 py-2.5">
+                        <Link href={`/employees/${emp.id}`} className="font-medium hover:underline" data-testid={`link-employee-${emp.id}`}>
+                          {emp.firstName} {emp.lastName}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2.5 text-muted-foreground" data-testid={`text-role-${emp.id}`}>
+                        {emp.role}
+                      </td>
+                      <td className="px-4 py-2.5 text-muted-foreground" data-testid={`text-email-${emp.id}`}>
+                        {emp.email || "N/A"}
+                      </td>
+                      <td className="px-4 py-2.5" data-testid={`text-status-${emp.id}`}>
+                        <Badge
+                          variant={emp.status === "active" ? "default" : "secondary"}
+                          className="text-xs"
+                          data-testid={`badge-status-${emp.id}`}
+                        >
+                          {emp.status === "active" ? t("employees.active") : t("employees.inactive")}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent data-testid="dialog-add-employee">
+          <DialogHeader>
+            <DialogTitle>{t("employees.addEmployee")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">{t("employees.firstName")}</Label>
+                <Input id="firstName" name="firstName" required data-testid="input-firstName" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">{t("employees.lastName")}</Label>
+                <Input id="lastName" name="lastName" required data-testid="input-lastName" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{t("employees.email")}</Label>
+              <Input id="email" name="email" type="email" data-testid="input-email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">{t("employees.role")}</Label>
+              <Input id="role" name="role" required placeholder="e.g. Foreman, Laborer, Electrician" data-testid="input-role" />
+            </div>
+            <Button type="submit" className="w-full" data-testid="button-submit-employee">
+              {t("common.create")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,162 +1,174 @@
-import { useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import GlassCard from "@/components/GlassCard";
-import type { TrainingRecord, Employee } from "@shared/schema";
+import { useState, useEffect } from "react";
+import { useI18n } from "@/contexts/I18nContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import { listEmployees, listTrainingRecords, listCertificates } from "@/mock/api";
+import type { MockEmployee, MockTrainingRecord, MockCertificate } from "@/mock/db";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Users, FileText, Award, AlertTriangle } from "lucide-react";
+
+const recentActivities = [
+  { date: "2026-02-10", description: "New training record added for Carlos Martinez - Fall Protection" },
+  { date: "2026-02-08", description: "Certificate generated for James Wilson - CERT-48272" },
+  { date: "2026-02-05", description: "Document approved: scaffolding_feb2026.pdf" },
+  { date: "2026-02-03", description: "Training record updated for Robert Johnson - Scaffolding Safety" },
+  { date: "2026-02-01", description: "New employee onboarded: Michael Brown - Crane Operator" },
+];
 
 export default function Dashboard() {
-  const [, setLocation] = useLocation();
-  const { user, logout } = useAuth();
+  const { t } = useI18n();
+  const { activeOrg } = useOrganization();
 
-  const { data: records, isLoading: recordsLoading } = useQuery<(TrainingRecord & { employee: Employee })[]>({
-    queryKey: ["/api/training-records"],
-    enabled: !!user,
-  });
+  const [employees, setEmployees] = useState<MockEmployee[]>([]);
+  const [records, setRecords] = useState<MockTrainingRecord[]>([]);
+  const [certificates, setCertificates] = useState<MockCertificate[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: expiringRecords } = useQuery<(TrainingRecord & { employee: Employee })[]>({
-    queryKey: ["/api/training-records/expiring?days=30"],
-    enabled: !!user,
-  });
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const [emps, recs, certs] = await Promise.all([
+        listEmployees(activeOrg.id),
+        listTrainingRecords(activeOrg.id),
+        listCertificates(activeOrg.id),
+      ]);
+      setEmployees(emps);
+      setRecords(recs);
+      setCertificates(certs);
+      setLoading(false);
+    };
+    load();
+  }, [activeOrg.id]);
 
-  const handleLogout = () => {
-    logout();
-    setLocation("/");
-  };
-
-  const totalRecords = records?.length || 0;
-  const expiredCount = records?.filter(r => {
+  const now = new Date();
+  const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const expiringSoon = records.filter((r) => {
     if (!r.expirationDate) return false;
-    return new Date(r.expirationDate) < new Date();
-  }).length || 0;
-  const expiringCount = expiringRecords?.length || 0;
-  const compliantPercent = totalRecords > 0 ? Math.round(((totalRecords - expiredCount) / totalRecords) * 100) : 0;
+    const expDate = new Date(r.expirationDate);
+    return expDate >= now && expDate <= thirtyDaysFromNow;
+  }).length;
 
-  const getStatusBadge = (record: TrainingRecord) => {
-    if (!record.expirationDate) return { text: "No expiration", className: "bg-blue-500/15 text-blue-300 border-blue-500/40" };
-    
-    const expDate = new Date(record.expirationDate);
-    const today = new Date();
-    const daysUntilExp = Math.floor((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20" data-testid="dashboard-loading">
+        <p className="text-muted-foreground">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
-    if (daysUntilExp < 0) {
-      return { text: "Expired", className: "bg-rose-500/15 text-rose-300 border-rose-500/40" };
-    } else if (daysUntilExp <= 14) {
-      return { text: `Expires in ${daysUntilExp} days`, className: "bg-amber-500/15 text-amber-300 border-amber-500/40" };
-    } else {
-      return { text: "Up to date", className: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" };
-    }
-  };
+  const statCards = [
+    {
+      label: t("dashboard.employees"),
+      value: employees.length,
+      icon: Users,
+      color: "text-sky-500",
+      bgColor: "bg-sky-500/10",
+      testId: "stat-employees",
+    },
+    {
+      label: t("dashboard.trainingRecords"),
+      value: records.length,
+      icon: FileText,
+      color: "text-emerald-500",
+      bgColor: "bg-emerald-500/10",
+      testId: "stat-training-records",
+    },
+    {
+      label: t("dashboard.certificates"),
+      value: certificates.length,
+      icon: Award,
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+      testId: "stat-certificates",
+    },
+    {
+      label: t("dashboard.expiringSoon"),
+      value: expiringSoon,
+      icon: AlertTriangle,
+      color: "text-rose-500",
+      bgColor: "bg-rose-500/10",
+      testId: "stat-expiring-soon",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-[color:var(--bg)] text-[color:var(--text)] p-4">
-      <div className="mx-auto max-w-7xl pt-6">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-md shadow-sky-500/40" />
-            <span className="text-lg font-semibold tracking-tight">
-              SafetySync.ai
+    <div className="max-w-7xl mx-auto space-y-6">
+      <h1 className="text-2xl font-semibold" data-testid="dashboard-title">
+        {t("dashboard.title")}
+      </h1>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat) => (
+          <Card key={stat.testId} data-testid={stat.testId}>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.label}
+              </CardTitle>
+              <div className={`rounded-md p-2 ${stat.bgColor}`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold" data-testid={`${stat.testId}-value`}>
+                {stat.value}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card data-testid="compliance-status">
+        <CardHeader>
+          <CardTitle>{t("dashboard.complianceStatus")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            {expiringSoon === 0 ? (
+              <Badge
+                className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 no-default-hover-elevate no-default-active-elevate"
+                data-testid="badge-compliance-good"
+              >
+                {t("dashboard.good")}
+              </Badge>
+            ) : (
+              <Badge
+                className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 no-default-hover-elevate no-default-active-elevate"
+                data-testid="badge-compliance-attention"
+              >
+                {t("dashboard.needsAttention")}
+              </Badge>
+            )}
+            <span className="text-sm text-muted-foreground" data-testid="compliance-detail">
+              {expiringSoon === 0
+                ? "All training records are up to date."
+                : `${expiringSoon} record(s) expiring within the next 30 days.`}
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setLocation("/employees")}
-              className="rounded-md px-4 py-2 text-sm font-medium text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover-elevate active-elevate-2"
-              data-testid="button-employees"
-            >
-              Employees
-            </button>
-            <button
-              onClick={handleLogout}
-              className="rounded-md border border-white/15 bg-transparent px-4 py-2 text-sm font-medium text-[color:var(--text)] hover-elevate active-elevate-2"
-              data-testid="button-logout"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">Training Dashboard</h1>
-          <p className="text-sm text-[color:var(--text-muted)]">
-            {user?.email}
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-8">
-          <GlassCard>
-            <div className="text-3xl font-semibold text-emerald-400" data-testid="stat-compliant">{compliantPercent}%</div>
-            <div className="mt-1 text-xs text-[color:var(--text-muted)]">Compliant</div>
-          </GlassCard>
-          <GlassCard>
-            <div className="text-3xl font-semibold text-[color:var(--text)]" data-testid="stat-total">{totalRecords}</div>
-            <div className="mt-1 text-xs text-[color:var(--text-muted)]">Total Records</div>
-          </GlassCard>
-          <GlassCard>
-            <div className="text-3xl font-semibold text-amber-400" data-testid="stat-expiring">{expiringCount}</div>
-            <div className="mt-1 text-xs text-[color:var(--text-muted)]">Expiring Soon</div>
-          </GlassCard>
-          <GlassCard>
-            <div className="text-3xl font-semibold text-rose-400" data-testid="stat-expired">{expiredCount}</div>
-            <div className="mt-1 text-xs text-[color:var(--text-muted)]">Overdue</div>
-          </GlassCard>
-        </div>
-
-        {/* Training Records Table */}
-        <GlassCard>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Training Records</h2>
-          </div>
-
-          {recordsLoading ? (
-            <div className="text-center py-8 text-[color:var(--text-muted)]">Loading...</div>
-          ) : records && records.length > 0 ? (
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-[color:var(--canvas)]/70">
-              <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] border-b border-white/5 bg-white/5 px-3 py-2 text-[11px] text-[color:var(--text-muted)]">
-                <span>Employee</span>
-                <span>Role</span>
-                <span>Training / Standard</span>
-                <span>Status</span>
-                <span className="text-right">Expiration</span>
+      <Card data-testid="recent-activity">
+        <CardHeader>
+          <CardTitle>{t("dashboard.recentActivity")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentActivities.map((activity, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3"
+                data-testid={`activity-item-${index}`}
+              >
+                <div className="mt-0.5 h-2 w-2 rounded-full bg-sky-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm">{activity.description}</p>
+                  <p className="text-xs text-muted-foreground">{activity.date}</p>
+                </div>
               </div>
-              {records.slice(0, 10).map((record) => {
-                const status = getStatusBadge(record);
-                return (
-                  <div
-                    key={record.id}
-                    className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] items-center border-t border-white/5 px-3 py-2.5 text-[11px]"
-                    data-testid={`training-record-${record.id}`}
-                  >
-                    <div className="truncate font-medium">
-                      {record.employee.firstName} {record.employee.lastName}
-                    </div>
-                    <div className="truncate text-[color:var(--text-muted)]">
-                      {record.employee.role}
-                    </div>
-                    <div className="truncate text-[color:var(--text-muted)]">
-                      {record.trainingType} · {record.oshaStandard}
-                    </div>
-                    <div className="flex">
-                      <span
-                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${status.className}`}
-                      >
-                        {status.text}
-                      </span>
-                    </div>
-                    <div className="text-right text-[color:var(--text-muted)]">
-                      {record.expirationDate || "N/A"}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-[color:var(--text-muted)]">
-              No training records found
-            </div>
-          )}
-        </GlassCard>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
