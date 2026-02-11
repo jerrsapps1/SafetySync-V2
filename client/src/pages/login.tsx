@@ -131,7 +131,7 @@ export default function Login() {
         </div>
 
         <div className="mt-4 text-center text-[10px] text-muted-foreground">
-          {t("common.poweredBy")}: SyncAi
+          {t("common.poweredBy")}
         </div>
       </div>
     </div>

@@ -53,7 +53,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     "common.view": "View",
     "common.approve": "Approve",
     "common.reject": "Reject",
-    "common.poweredBy": "Powered by SafetySync.ai",
+    "common.poweredBy": "Powered by: SyncAI",
 
     "auth.signInWorkspace": "Sign in to your workspace",
     "auth.signInOwner": "Owner Sign In",
@@ -362,7 +362,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     "common.view": "Ver",
     "common.approve": "Aprobar",
     "common.reject": "Rechazar",
-    "common.poweredBy": "Hecho con SafetySync.ai",
+    "common.poweredBy": "Powered by: SyncAI",
 
     "auth.signInWorkspace": "Entra a tu espacio de trabajo",
     "auth.signInOwner": "Entrada de Dueño",

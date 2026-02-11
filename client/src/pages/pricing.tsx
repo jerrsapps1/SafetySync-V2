@@ -90,7 +90,7 @@ export default function Pricing() {
         </div>
       </main>
       <footer className="border-t py-8 text-center text-xs text-muted-foreground">
-        {t("common.poweredBy")}: SyncAi
+        {t("common.poweredBy")}
       </footer>
     </div>
   );

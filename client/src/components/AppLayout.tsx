@@ -114,7 +114,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
           <SidebarFooter className="p-4">
             <div className="text-[10px] text-muted-foreground text-center">
-              {t("common.poweredBy")}: SyncAi
+              {t("common.poweredBy")}
             </div>
           </SidebarFooter>
         </Sidebar>
@@ -166,10 +166,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-
-              <span className="text-xs text-muted-foreground px-2 hidden sm:inline">
-                {t("common.poweredBy")}: SyncAi
-              </span>
 
               <Button
                 variant="ghost"
