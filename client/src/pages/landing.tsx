@@ -115,50 +115,87 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20">
-        {/* Hero */}
-        <section className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center">
-          <div>
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              AI-powered OSHA compliance you can trust
-            </h1>
-            <p className="mt-4 max-w-xl text-[color:var(--text-muted)]">
-              Clear, inspection-ready documentation that shows training, understanding, and compliance—organized automatically.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link href="/login">
-                <button 
-                  className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
-                  data-testid="button-create-account-hero"
-                >
-                  Create an account
-                </button>
-              </Link>
-              <button 
-                className="hover-elevate active-elevate-2 rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)]"
-                data-testid="button-see-demo"
-                onClick={() => setDemoOpen(true)}
-              >
-                See Demo
-              </button>
-            </div>
-            <p className="mt-3 text-xs text-[color:var(--text-muted)]">
-              Built for safety managers first, with HR collaboration support.
-            </p>
-          </div>
+      {/* Hero with network background */}
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#080c14] via-[#0a1020] to-[#0d1117]" />
 
-          {/* Simple hero visual */}
-          <div className="mt-8 lg:mt-0">
-            <GlassCard className="p-8 text-center">
-              <div className="mx-auto h-24 w-24 rounded-2xl bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-2xl shadow-sky-500/40" />
-              <h3 className="mt-6 text-lg font-semibold">Documentation You Can Trust</h3>
-              <p className="mt-2 text-sm text-[color:var(--text-muted)]">
-                Training records, understanding verification, and compliance status—all in one clear system.
+          <svg className="absolute inset-0 h-full w-full opacity-[0.12]" xmlns="http://www.w3.org/2000/svg">
+            <line x1="10%" y1="15%" x2="35%" y2="40%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="35%" y1="40%" x2="60%" y2="20%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="60%" y1="20%" x2="85%" y2="45%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="85%" y1="45%" x2="70%" y2="75%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="70%" y1="75%" x2="40%" y2="65%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="40%" y1="65%" x2="15%" y2="80%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="35%" y1="40%" x2="40%" y2="65%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="60%" y1="20%" x2="70%" y2="75%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="20%" y1="5%" x2="35%" y2="40%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="50%" y1="10%" x2="60%" y2="20%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="90%" y1="15%" x2="85%" y2="45%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="5%" y1="50%" x2="15%" y2="80%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="95%" y1="70%" x2="70%" y2="75%" stroke="#5b9cf5" strokeWidth="0.5" />
+            <line x1="25%" y1="90%" x2="40%" y2="65%" stroke="#5b9cf5" strokeWidth="0.5" />
+          </svg>
+
+          <div className="absolute left-[10%] top-[15%] h-16 w-16 rounded-full border border-sky-500/15 bg-sky-500/5 blur-[1px]" />
+          <div className="absolute left-[35%] top-[40%] h-5 w-5 rounded-full border border-sky-400/20 bg-sky-400/10 shadow-[0_0_15px_3px_rgba(56,189,248,0.12)]" />
+          <div className="absolute left-[60%] top-[20%] h-10 w-10 rounded-full border border-indigo-400/15 bg-indigo-400/5" />
+          <div className="absolute left-[85%] top-[45%] h-20 w-20 rounded-full border border-sky-500/10 bg-sky-500/[0.03]" />
+          <div className="absolute left-[70%] top-[75%] h-6 w-6 rounded-full border border-sky-400/20 bg-sky-400/10 shadow-[0_0_12px_2px_rgba(56,189,248,0.1)]" />
+          <div className="absolute left-[40%] top-[65%] h-4 w-4 rounded-full border border-indigo-400/20 bg-indigo-400/10" />
+          <div className="absolute left-[15%] top-[80%] h-14 w-14 rounded-full border border-sky-500/10 bg-sky-500/[0.03]" />
+          <div className="absolute left-[50%] top-[10%] h-8 w-8 rounded-full border border-indigo-500/10 bg-indigo-500/5" />
+          <div className="absolute left-[90%] top-[15%] h-12 w-12 rounded-full border border-sky-500/10 bg-sky-500/[0.03]" />
+
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0d1117] to-transparent" />
+        </div>
+
+        <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center">
+            <div>
+              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                AI-powered OSHA compliance you can trust
+              </h1>
+              <p className="mt-4 max-w-xl text-[color:var(--text-muted)]">
+                Clear, inspection-ready documentation that shows training, understanding, and compliance—organized automatically.
               </p>
-            </GlassCard>
-          </div>
-        </section>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <Link href="/login">
+                  <button 
+                    className="hover-elevate active-elevate-2 rounded-md border border-white/10 bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-orange-500/30"
+                    data-testid="button-create-account-hero"
+                  >
+                    Create an account
+                  </button>
+                </Link>
+                <button 
+                  className="hover-elevate active-elevate-2 rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)]"
+                  data-testid="button-see-demo"
+                  onClick={() => setDemoOpen(true)}
+                >
+                  See Demo
+                </button>
+              </div>
+              <p className="mt-3 text-xs text-[color:var(--text-muted)]">
+                Built for safety managers first, with HR collaboration support.
+              </p>
+            </div>
 
+            {/* Simple hero visual */}
+            <div className="mt-8 lg:mt-0">
+              <GlassCard className="p-8 text-center">
+                <div className="mx-auto h-24 w-24 rounded-2xl bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-2xl shadow-sky-500/40" />
+                <h3 className="mt-6 text-lg font-semibold">Documentation You Can Trust</h3>
+                <p className="mt-2 text-sm text-[color:var(--text-muted)]">
+                  Training records, understanding verification, and compliance status—all in one clear system.
+                </p>
+              </GlassCard>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <main className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
         {/* Pain section */}
         <section
           id="problem"
