@@ -4,11 +4,16 @@
 
 /* GitHub-inspired custom colors for SafetySync.ai */
 :root {
-  --bg: #0d1117;
-  --canvas: #161b22;
-  --text: #c9d1d9;
-  --text-muted: #8b949e;
-  --border-custom: #30363d;
+  --bg: #ffffff;
+  --canvas: #f6f8fa;
+  --text: #1f2328;
+  --text-muted: #636c76;
+  --border-custom: #d1d9e0;
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --subtle-border: rgba(0, 0, 0, 0.06);
+  --subtle-bg: rgba(0, 0, 0, 0.03);
 
   /* LIGHT MODE (fallback) */
   --button-outline: rgba(0,0,0, .10);
@@ -95,6 +100,16 @@
 }
 
 .dark {
+  --bg: #0d1117;
+  --canvas: #161b22;
+  --text: #c9d1d9;
+  --text-muted: #8b949e;
+  --border-custom: #30363d;
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 0 40px rgba(88,166,255,0.15), 0 0 80px rgba(56,139,253,0.10), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --subtle-border: rgba(255, 255, 255, 0.05);
+  --subtle-bg: rgba(255, 255, 255, 0.05);
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 9;

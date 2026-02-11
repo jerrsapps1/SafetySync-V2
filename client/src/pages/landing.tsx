@@ -152,7 +152,7 @@ export default function Landing() {
           <div className="absolute left-[50%] top-[10%] h-8 w-8 rounded-full border border-indigo-500/10 bg-indigo-500/5" />
           <div className="absolute left-[90%] top-[15%] h-12 w-12 rounded-full border border-sky-500/10 bg-sky-500/[0.03]" />
 
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0d1117] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-32" style={{ background: "linear-gradient(to top, var(--bg), transparent)" }} />
         </div>
 
         <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20">
@@ -274,8 +274,8 @@ export default function Landing() {
               <span>{t("landing.tableOverview")}</span>
               <span>OSHA 1910 · OSHA 1926</span>
             </div>
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-[color:var(--canvas)]/70">
-              <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] border-b border-white/5 bg-white/5 px-3 py-2 text-[11px] text-[color:var(--text-muted)]">
+            <div className="overflow-hidden rounded-xl border border-[color:var(--glass-border)] bg-[color:var(--canvas)]/70">
+              <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] border-b border-[color:var(--subtle-border)] bg-[color:var(--subtle-bg)] px-3 py-2 text-[11px] text-[color:var(--text-muted)]">
                 <span>{t("landing.tableEmployee")}</span>
                 <span>{t("landing.tableRoleSite")}</span>
                 <span>{t("landing.tableStandard")}</span>
@@ -310,7 +310,7 @@ export default function Landing() {
               ].map((row) => (
                 <div
                   key={row.name}
-                  className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] items-center border-t border-white/5 px-3 py-2.5 text-[11px]"
+                  className="grid grid-cols-[1.4fr_1fr_1fr_1fr_1fr] items-center border-t border-[color:var(--subtle-border)] px-3 py-2.5 text-[11px]"
                 >
                   <div className="truncate font-medium">{row.name}</div>
                   <div className="truncate text-[color:var(--text-muted)]">
@@ -359,15 +359,15 @@ export default function Landing() {
               <p className="text-xs text-[color:var(--text-muted)]">{t("landing.complianceCurrentStatus")}</p>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className="rounded-lg border border-[color:var(--glass-border)] bg-[color:var(--subtle-bg)] p-4">
                 <div className="text-3xl font-semibold text-emerald-400">92%</div>
                 <div className="mt-1 text-xs text-[color:var(--text-muted)]">{t("landing.compliant")}</div>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className="rounded-lg border border-[color:var(--glass-border)] bg-[color:var(--subtle-bg)] p-4">
                 <div className="text-3xl font-semibold text-amber-400">27</div>
                 <div className="mt-1 text-xs text-[color:var(--text-muted)]">{t("landing.expiringSoonLabel")}</div>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className="rounded-lg border border-[color:var(--glass-border)] bg-[color:var(--subtle-bg)] p-4">
                 <div className="text-3xl font-semibold text-rose-400">14</div>
                 <div className="mt-1 text-xs text-[color:var(--text-muted)]">{t("landing.overdue")}</div>
               </div>
@@ -450,7 +450,7 @@ export default function Landing() {
         </section>
 
         {/* Footer */}
-        <footer className="mt-20 border-t border-white/5 bg-[#0d1117] pt-12 pb-8">
+        <footer className="mt-20 border-t border-[color:var(--border-custom)] bg-[color:var(--bg)] pt-12 pb-8">
           <div className="grid gap-8 md:grid-cols-3">
             {/* Company Info */}
             <div>
@@ -519,7 +519,7 @@ export default function Landing() {
           </div>
 
           {/* Copyright */}
-          <div className="mt-12 pt-8 border-t border-white/5 text-center text-xs text-[color:var(--text-muted)]">
+          <div className="mt-12 pt-8 border-t border-[color:var(--border-custom)] text-center text-xs text-[color:var(--text-muted)]">
             © {currentYear} SafetySync.ai. {t("landing.allRightsReserved")}
           </div>
         </footer>
@@ -536,7 +536,7 @@ export default function Landing() {
           </DialogHeader>
           
           {/* Placeholder for future video/animation */}
-          <div className="aspect-video rounded-lg border border-white/10 bg-gradient-to-br from-[#161b22] to-[#0d1117] flex flex-col items-center justify-center p-12">
+          <div className="aspect-video rounded-lg border border-[color:var(--glass-border)] bg-[color:var(--canvas)] flex flex-col items-center justify-center p-12">
             <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-indigo-500/20 via-sky-500/20 to-emerald-400/20 border border-sky-500/30 flex items-center justify-center mb-4">
               <Play className="h-8 w-8 text-sky-400 ml-1" />
             </div>
@@ -558,7 +558,7 @@ export default function Landing() {
                 </button>
               </Link>
               <button 
-                className="rounded-md border border-white/15 bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)] hover-elevate active-elevate-2"
+                className="rounded-md border border-[color:var(--border-custom)] bg-transparent px-5 py-2.5 text-sm font-medium text-[color:var(--text)] hover-elevate active-elevate-2"
                 data-testid="button-demo-modal-close"
                 onClick={() => setDemoOpen(false)}
               >
