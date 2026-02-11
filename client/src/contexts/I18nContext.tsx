@@ -319,6 +319,9 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     "landing.testimonialAuthor": "EHS Manager, Apex Construction",
     "landing.aiTitle": "Transparent AI that supports your expertise.",
     "landing.aiDesc": "Our AI assists with documentation and compliance tracking—it doesn't replace safety expertise or make decisions for you. You stay in control of training content and standards while our AI helps you maintain clear, audit-ready records that reflect how learning and understanding were evaluated.",
+    "landing.roleForeman": "Foreman",
+    "landing.roleLaborer": "Laborer",
+    "landing.roleMaintenance": "Maintenance",
   },
   es: {
     "nav.dashboard": "Panel",
@@ -625,6 +628,9 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     "landing.testimonialAuthor": "Gerente EHS, Apex Construction",
     "landing.aiTitle": "IA transparente que apoya tu experiencia.",
     "landing.aiDesc": "Nuestra IA ayuda con la documentación y el seguimiento de cumplimiento—no reemplaza la experiencia en seguridad ni toma decisiones por ti. Tú mantienes el control del contenido de capacitación y las normas mientras nuestra IA te ayuda a mantener registros claros y listos para auditoría.",
+    "landing.roleForeman": "Capataz",
+    "landing.roleLaborer": "Obrero",
+    "landing.roleMaintenance": "Mantenimiento",
   },
 };
 

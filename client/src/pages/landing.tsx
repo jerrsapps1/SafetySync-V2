@@ -285,7 +285,7 @@ export default function Landing() {
               {[
                 {
                   name: "Maria Lopez",
-                  role: "Foreman · Site A",
+                  role: `${t("landing.roleForeman")} · Site A`,
                   std: "OSHA 30 · 1926",
                   status: t("landing.statusUpToDate"),
                   badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
@@ -293,7 +293,7 @@ export default function Landing() {
                 },
                 {
                   name: "James Carter",
-                  role: "Laborer · Site B",
+                  role: `${t("landing.roleLaborer")} · Site B`,
                   std: "OSHA 10 · 1926",
                   status: t("landing.statusExpiresIn14"),
                   badge: "bg-amber-500/15 text-amber-300 border-amber-500/40",
@@ -301,7 +301,7 @@ export default function Landing() {
                 },
                 {
                   name: "Alex Nguyen",
-                  role: "Maintenance · Plant 1",
+                  role: `${t("landing.roleMaintenance")} · Plant 1`,
                   std: "LOTO · 1910",
                   status: t("landing.statusExpired"),
                   badge: "bg-rose-500/15 text-rose-300 border-rose-500/40",
