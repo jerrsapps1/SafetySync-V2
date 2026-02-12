@@ -24,7 +24,7 @@ The application features a marketing landing page with a GitHub-inspired dark th
 - Admin sidebar: "Delinquent" nav item under Billing
 
 **Products & Access Control (Feb 2026):**
-- products table: slug, name, description (seeded with SafetySync, OpsSync, JSAsync, DocSync)
+- products table: slug, name, description (seeded with SafetySync, OpsSync, JsaSync, DocSync)
 - org_entitlements table: orgId, productId, enabled, plan, billingSource, notes, endsAt, updatedByUserId
 - GET /api/admin/products - list all products
 - GET /api/admin/organizations/:orgId/entitlements - list org entitlements
