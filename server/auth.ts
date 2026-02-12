@@ -48,14 +48,25 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 
     const token = authHeader.substring(7);
 
-    if (token === "mock-token" && process.env.NODE_ENV !== "production") {
-      (req as any).user = {
-        id: "user-1",
-        email: "manager@democonstruction.com",
-        role: "workspace_user",
-        orgId: "org-1",
-      };
-      return next();
+    if (process.env.NODE_ENV !== "production") {
+      if (token === "mock-token") {
+        (req as any).user = {
+          id: "user-1",
+          email: "manager@democonstruction.com",
+          role: "workspace_user",
+          orgId: "org-1",
+        };
+        return next();
+      }
+      if (token === "mock-admin-token") {
+        (req as any).user = {
+          id: "admin-1",
+          email: "admin@syncai.com",
+          role: "owner_admin",
+          orgId: null,
+        };
+        return next();
+      }
     }
 
     const payload = verifyToken(token);

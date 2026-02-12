@@ -26,8 +26,11 @@ export interface IStorage {
   
   getCompany(id: string): Promise<Company | undefined>;
   getCompanyByStripeCustomerId(stripeCustomerId: string): Promise<Company | undefined>;
+  getAllCompanies(): Promise<Company[]>;
   createCompany(company: InsertCompany): Promise<Company>;
   updateCompany(id: string, data: Partial<InsertCompany>): Promise<Company>;
+  
+  getPrimaryAdminForCompany(companyId: string): Promise<User | undefined>;
   
   getLocations(companyId: string): Promise<Location[]>;
   createLocation(location: InsertLocation): Promise<Location>;
@@ -74,6 +77,15 @@ export class DbStorage implements IStorage {
 
   async getCompanyByStripeCustomerId(stripeCustomerId: string): Promise<Company | undefined> {
     const result = await db.select().from(companies).where(eq(companies.stripeCustomerId, stripeCustomerId));
+    return result[0];
+  }
+
+  async getAllCompanies(): Promise<Company[]> {
+    return db.select().from(companies).orderBy(desc(companies.createdAt));
+  }
+
+  async getPrimaryAdminForCompany(companyId: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.companyId, companyId)).limit(1);
     return result[0];
   }
 

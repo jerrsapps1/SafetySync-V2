@@ -42,17 +42,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedAuth === "true" && storedRole) {
       setRole(storedRole);
       setUser(MOCK_ADMIN_USER);
-      setToken("mock-token");
+      setToken("mock-admin-token");
+      localStorage.setItem("auth_token", "mock-admin-token");
     }
     setIsLoading(false);
   }, []);
 
   const loginAs = (r: UserRole) => {
     setUser(MOCK_ADMIN_USER);
-    setToken("mock-token");
+    setToken("mock-admin-token");
     setRole(r);
     localStorage.setItem("admin-console-role", r);
     localStorage.setItem("admin-console-authed", "true");
+    localStorage.setItem("auth_token", "mock-admin-token");
   };
 
   const login = async (_credentials: { email: string; password: string }) => {
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole("admin");
     localStorage.removeItem("admin-console-role");
     localStorage.removeItem("admin-console-authed");
+    localStorage.removeItem("auth_token");
   };
 
   return (

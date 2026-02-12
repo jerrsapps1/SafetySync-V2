@@ -180,3 +180,28 @@ export async function createPortalSession(
 
   return session.url;
 }
+
+export async function listCustomerInvoices(
+  customerId: string,
+  limit = 10,
+): Promise<{
+  id: string;
+  date: string;
+  amount: string;
+  status: string;
+  hostedUrl: string | null;
+}[]> {
+  const stripe = getStripe();
+  const invoices = await stripe.invoices.list({
+    customer: customerId,
+    limit,
+  });
+
+  return invoices.data.map((inv) => ({
+    id: inv.id,
+    date: inv.created ? new Date(inv.created * 1000).toISOString() : "",
+    amount: inv.amount_due != null ? (inv.amount_due / 100).toFixed(2) : "0.00",
+    status: inv.status || "unknown",
+    hostedUrl: inv.hosted_invoice_url || null,
+  }));
+}
