@@ -36,6 +36,17 @@ The application features a marketing landing page with a GitHub-inspired dark th
 - Auth context extended: owner_admin vs csr_admin roles with separate mock tokens (mock-admin-token / mock-csr-token)
 - Login page: separate "Sign In as Owner Admin" and "Sign In as CSR Admin" buttons
 
+**Entitlement Enforcement (Feb 2026):**
+- requireEntitlement(productSlug) middleware in server/auth.ts - checks org_entitlements by product slug
+- Returns 403 with {code: "NOT_ENTITLED"} when product is disabled for org
+- Applied to all SafetySync workspace routes: locations, employees, training-records (CRUD)
+- GET /api/workspace/entitlements returns {orgId, entitlements map, billingStatus, trialEndsAt}
+- Frontend EntitlementContext (both client/ and apps/workspace-web/) fetches entitlements on auth
+- AccessBlocked page shown when safetysync entitlement is disabled
+- Settings page: "Product Suite" section listing enabled/disabled products with plan badges
+- Dev-mode fallback: mock-token (org-1 not in DB) gets safetysync enabled by default
+- Storage methods: isOrgEntitledToProduct(orgId, slug), getOrgEntitlementsWithProducts(orgId)
+
 **Stripe Billing Integration:**
 - Centralized Stripe service: server/stripe.ts (lazy init, checkout, portal, plan catalog)
 - GET /api/billing/plans returns plan catalog from STRIPE_PRICE_PRO/STRIPE_PRICE_ENTERPRISE env vars (fallback to static plans when Stripe not configured)

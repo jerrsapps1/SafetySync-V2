@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateToken, hashPassword, comparePassword, requireAuth, requireRole } from "./auth";
+import { generateToken, hashPassword, comparePassword, requireAuth, requireRole, requireEntitlement } from "./auth";
 import { insertUserSchema, insertCompanySchema, insertLocationSchema, insertEmployeeSchema, insertTrainingRecordSchema } from "@shared/schema";
 import { authRateLimit } from "./rate-limit";
 import adminRoutes from "./admin-routes";
@@ -377,7 +377,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/locations", requireAuth, async (req, res) => {
+  const safetysyncGuard = requireEntitlement("safetysync");
+
+  app.get("/api/workspace/entitlements", requireAuth, async (req, res) => {
+    try {
+      const companyId = (req as any).user.orgId;
+      if (!companyId) {
+        return res.status(403).json({ error: "No organization associated with user" });
+      }
+
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        if (process.env.NODE_ENV !== "production") {
+          return res.json({
+            orgId: companyId,
+            entitlements: { safetysync: { enabled: true, plan: "trial" } },
+            billingStatus: "trial",
+            trialEndsAt: null,
+          });
+        }
+        return res.status(404).json({ error: "Organization not found" });
+      }
+
+      const entitlementRows = await storage.getOrgEntitlementsWithProducts(companyId);
+
+      const entitlements: Record<string, { enabled: boolean; plan: string }> = {};
+      for (const row of entitlementRows) {
+        entitlements[row.productSlug] = {
+          enabled: row.enabled,
+          plan: row.plan,
+        };
+      }
+
+      res.json({
+        orgId: companyId,
+        entitlements,
+        billingStatus: company.billingStatus || "trial",
+        trialEndsAt: company.trialEndDate?.toISOString() || null,
+      });
+    } catch (error: any) {
+      console.error("Workspace entitlements error:", error);
+      res.status(500).json({ error: "Failed to get entitlements" });
+    }
+  });
+
+  app.get("/api/locations", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -390,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/locations", requireAuth, async (req, res) => {
+  app.post("/api/locations", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -409,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees", requireAuth, async (req, res) => {
+  app.get("/api/employees", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -422,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees/:id", requireAuth, async (req, res) => {
+  app.get("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -439,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/employees", requireAuth, async (req, res) => {
+  app.post("/api/employees", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -458,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employees/:id", requireAuth, async (req, res) => {
+  app.patch("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -475,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/employees/:id", requireAuth, async (req, res) => {
+  app.delete("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -489,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/training-records", requireAuth, async (req, res) => {
+  app.get("/api/training-records", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -503,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/training-records/expiring", requireAuth, async (req, res) => {
+  app.get("/api/training-records/expiring", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -518,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees/:employeeId/training-records", requireAuth, async (req, res) => {
+  app.get("/api/employees/:employeeId/training-records", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -532,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/training-records", requireAuth, async (req, res) => {
+  app.post("/api/training-records", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -556,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/training-records/:id", requireAuth, async (req, res) => {
+  app.patch("/api/training-records/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {
@@ -573,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/training-records/:id", requireAuth, async (req, res) => {
+  app.delete("/api/training-records/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) {

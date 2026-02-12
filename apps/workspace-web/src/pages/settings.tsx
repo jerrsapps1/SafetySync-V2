@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, Package, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEntitlements } from "@/contexts/EntitlementContext";
 
 export default function SettingsPage() {
   const { t, lang, toggleLang } = useI18n();
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: entitlementData } = useEntitlements();
 
   const [orgName, setOrgName] = useState(activeOrg.name);
   const [orgAddress, setOrgAddress] = useState("1234 Builder Ave, Houston, TX 77001");
@@ -128,6 +130,56 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {entitlementData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center gap-2" data-testid="text-suite-title">
+              <Package className="h-5 w-5" />
+              Product Suite
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Products enabled for your organization.
+            </p>
+            {Object.keys(entitlementData.entitlements).length === 0 ? (
+              <p className="text-sm text-muted-foreground" data-testid="text-no-products">
+                No products configured yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(entitlementData.entitlements).map(([slug, entry]) => (
+                  <div
+                    key={slug}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2 border-b last:border-b-0"
+                    data-testid={`row-product-${slug}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {entry.enabled ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="text-sm font-medium capitalize" data-testid={`text-product-name-${slug}`}>
+                        {slug}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={entry.enabled ? "default" : "secondary"} data-testid={`badge-product-status-${slug}`}>
+                        {entry.enabled ? "Active" : "Inactive"}
+                      </Badge>
+                      <Badge variant="outline" data-testid={`badge-product-plan-${slug}`}>
+                        {entry.plan}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Button onClick={handleSave} data-testid="button-save-settings">
         {t("settings.saveChanges")}

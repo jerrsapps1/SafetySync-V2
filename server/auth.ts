@@ -107,3 +107,42 @@ export function requireRole(allowedRoles: UserRole[]) {
     next();
   };
 }
+
+export function requireEntitlement(productSlug: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    if (!user.orgId) {
+      return res.status(403).json({
+        code: "NOT_ENTITLED",
+        message: "No organization associated with your account.",
+      });
+    }
+    try {
+      const { storage } = await import("./storage");
+      const company = await storage.getCompany(user.orgId);
+      if (!company) {
+        if (process.env.NODE_ENV !== "production") {
+          return next();
+        }
+        return res.status(403).json({
+          code: "NOT_ENTITLED",
+          message: "Organization not found.",
+        });
+      }
+      const entitled = await storage.isOrgEntitledToProduct(user.orgId, productSlug);
+      if (!entitled) {
+        return res.status(403).json({
+          code: "NOT_ENTITLED",
+          message: "This product is not enabled for your organization.",
+        });
+      }
+      next();
+    } catch (error) {
+      console.error("Entitlement check failed:", error);
+      return res.status(500).json({ error: "Failed to verify entitlement" });
+    }
+  };
+}

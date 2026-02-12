@@ -74,6 +74,8 @@ export interface IStorage {
   createProduct(data: InsertProduct): Promise<Product>;
   getOrgEntitlements(orgId: string): Promise<OrgEntitlement[]>;
   upsertOrgEntitlement(data: InsertOrgEntitlement): Promise<OrgEntitlement>;
+  isOrgEntitledToProduct(orgId: string, productSlug: string): Promise<boolean>;
+  getOrgEntitlementsWithProducts(orgId: string): Promise<Array<OrgEntitlement & { productSlug: string; productName: string }>>;
 }
 
 export class DbStorage implements IStorage {
@@ -328,6 +330,43 @@ export class DbStorage implements IStorage {
 
     const result = await db.insert(orgEntitlements).values(data).returning();
     return result[0];
+  }
+
+  async isOrgEntitledToProduct(orgId: string, productSlug: string): Promise<boolean> {
+    const result = await db
+      .select({ enabled: orgEntitlements.enabled })
+      .from(orgEntitlements)
+      .innerJoin(products, eq(orgEntitlements.productId, products.id))
+      .where(
+        and(
+          eq(orgEntitlements.orgId, orgId),
+          eq(products.slug, productSlug),
+          eq(orgEntitlements.enabled, true),
+        ),
+      );
+    return result.length > 0;
+  }
+
+  async getOrgEntitlementsWithProducts(orgId: string): Promise<Array<OrgEntitlement & { productSlug: string; productName: string }>> {
+    const result = await db
+      .select({
+        id: orgEntitlements.id,
+        orgId: orgEntitlements.orgId,
+        productId: orgEntitlements.productId,
+        enabled: orgEntitlements.enabled,
+        plan: orgEntitlements.plan,
+        billingSource: orgEntitlements.billingSource,
+        notes: orgEntitlements.notes,
+        endsAt: orgEntitlements.endsAt,
+        updatedByUserId: orgEntitlements.updatedByUserId,
+        updatedAt: orgEntitlements.updatedAt,
+        productSlug: products.slug,
+        productName: products.name,
+      })
+      .from(orgEntitlements)
+      .innerJoin(products, eq(orgEntitlements.productId, products.id))
+      .where(eq(orgEntitlements.orgId, orgId));
+    return result;
   }
 }
 

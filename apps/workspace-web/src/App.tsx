@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
+import { EntitlementProvider, useEntitlements } from "@/contexts/EntitlementContext";
 import AppLayout from "@/components/AppLayout";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
@@ -23,12 +24,26 @@ import Pricing from "@/pages/pricing";
 import Demo from "@/pages/demo";
 import Security from "@/pages/security";
 import NotFound from "@/pages/not-found";
+import AccessBlocked from "@/pages/access-blocked";
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
+  const { isLoading: entitlementLoading, isEntitled } = useEntitlements();
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  if (entitlementLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
+      </div>
+    );
+  }
+
+  if (!isEntitled("safetysync")) {
+    return <AccessBlocked />;
   }
 
   return (
@@ -82,12 +97,14 @@ function App() {
       <ThemeProvider>
         <I18nProvider>
           <AuthProvider>
-            <OrganizationProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Router />
-              </TooltipProvider>
-            </OrganizationProvider>
+            <EntitlementProvider>
+              <OrganizationProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Router />
+                </TooltipProvider>
+              </OrganizationProvider>
+            </EntitlementProvider>
           </AuthProvider>
         </I18nProvider>
       </ThemeProvider>
