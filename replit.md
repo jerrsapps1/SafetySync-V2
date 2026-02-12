@@ -6,7 +6,23 @@ SafetySync.ai is an AI-powered OSHA compliance platform designed for Safety/EHS 
 
 The application features a marketing landing page with a GitHub-inspired dark theme and glassmorphic design, along with an authenticated dashboard for managing employees and training records.
 
-## Recent Updates (November 2024)
+## Recent Updates (February 2026)
+
+**Billing Center:**
+- Added /billing page with Current Plan, Usage, Upgrade Plan, Invoices, and Manage Billing sections
+- Backend: GET /api/billing/summary (auth-protected) returns plan, status, trial info, usage counts, invoices
+- Backend: POST /api/billing/portal returns 501 when Stripe not configured (Stripe-ready skeleton)
+- Mock auth gracefully handled: billing page shows demo data when using mock login
+- Full i18n support (EN + ES-MX)
+- Navigation: Billing nav item added to sidebar between Compliance and Settings
+
+**Account Creation & Onboarding:**
+- Create Account page at /create-account with 14-day free trial (no credit card)
+- 3-step onboarding wizard at /onboarding (add employees, upload docs, confirmation)
+- Trial banner on dashboard showing countdown
+- Backend: POST /api/auth/create-account with trial logic
+
+## Previous Updates (November 2024)
 
 **Landing Page Messaging Improvements:**
 - Updated hero: "AI-powered OSHA compliance you can trust" with emphasis on inspection-ready documentation

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,17 +63,24 @@ export default function BillingPage() {
   const { toast } = useToast();
   const [portalLoading, setPortalLoading] = useState(false);
 
-  const { data: billing, isLoading, error } = useQuery<BillingSummary>({
+  const isMockAuth = token === "mock-token";
+
+  const mockBilling: BillingSummary = {
+    plan: "trial",
+    billingStatus: "trial",
+    trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    employeesCount: 7,
+    trainingRecordsCount: 6,
+    certificatesCount: 3,
+    invoices: [],
+  };
+
+  const { data: apiBilling, isLoading, error } = useQuery<BillingSummary>({
     queryKey: ["/api/billing/summary"],
-    queryFn: async () => {
-      const res = await fetch("/api/billing/summary", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch billing");
-      return res.json();
-    },
-    enabled: !!token,
+    enabled: !!token && !isMockAuth,
   });
+
+  const billing = isMockAuth ? mockBilling : apiBilling;
 
   const trialDate = billing?.trialEndsAt ? new Date(billing.trialEndsAt) : null;
   const trialDaysLeft = trialDate
@@ -87,34 +95,19 @@ export default function BillingPage() {
   const handleManageBilling = async () => {
     setPortalLoading(true);
     try {
-      const res = await fetch("/api/billing/portal", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ returnUrl: window.location.origin + "/billing" }),
+      const res = await apiRequest("POST", "/api/billing/portal", {
+        returnUrl: window.location.origin + "/billing",
       });
-
-      if (res.status === 501) {
-        toast({
-          title: t("billing.manageBilling"),
-          description: t("billing.stripeNotConfigured"),
-        });
-        return;
-      }
-
-      if (!res.ok) throw new Error("Portal error");
-
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       }
-    } catch {
+    } catch (err: any) {
+      const is501 = err?.message?.startsWith("501");
       toast({
         title: t("billing.manageBilling"),
         description: t("billing.stripeNotConfigured"),
-        variant: "destructive",
+        variant: is501 ? undefined : "destructive",
       });
     } finally {
       setPortalLoading(false);
