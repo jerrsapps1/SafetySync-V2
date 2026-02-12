@@ -13,6 +13,7 @@ import Organizations from "@/pages/organizations";
 import AdminSupport from "@/pages/admin-support";
 import Billing from "@/pages/billing";
 import OrgBillingDetail from "@/pages/org-billing-detail";
+import Delinquent from "@/pages/delinquent";
 import Financials from "@/pages/financials";
 import Audit from "@/pages/audit";
 import AdminSettings from "@/pages/admin-settings";
@@ -25,6 +26,7 @@ function AppRoutes() {
         <Route path="/dashboard" component={AdminDashboard} />
         <Route path="/organizations" component={Organizations} />
         <Route path="/support" component={AdminSupport} />
+        <Route path="/billing/delinquent" component={Delinquent} />
         <Route path="/billing/:orgId" component={OrgBillingDetail} />
         <Route path="/billing" component={Billing} />
         <Route path="/financials" component={Financials} />

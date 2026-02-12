@@ -5,6 +5,8 @@ import {
   locations, 
   employees, 
   trainingRecords,
+  orgBillingOverrides,
+  billingNotes,
   type User,
   type InsertUser,
   type Company,
@@ -15,8 +17,12 @@ import {
   type InsertEmployee,
   type TrainingRecord,
   type InsertTrainingRecord,
+  type OrgBillingOverride,
+  type InsertBillingOverride,
+  type BillingNote,
+  type InsertBillingNote,
 } from "@shared/schema";
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -47,6 +53,15 @@ export interface IStorage {
   createTrainingRecord(record: InsertTrainingRecord): Promise<TrainingRecord>;
   updateTrainingRecord(id: string, companyId: string, record: Partial<InsertTrainingRecord>): Promise<TrainingRecord>;
   deleteTrainingRecord(id: string, companyId: string): Promise<void>;
+
+  getActiveOverride(orgId: string): Promise<OrgBillingOverride | undefined>;
+  createOverride(data: InsertBillingOverride): Promise<OrgBillingOverride>;
+  deleteOverride(orgId: string): Promise<void>;
+
+  getBillingNotes(orgId: string): Promise<BillingNote[]>;
+  createBillingNote(data: InsertBillingNote): Promise<BillingNote>;
+
+  getDelinquentCompanies(): Promise<Company[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -207,6 +222,46 @@ export class DbStorage implements IStorage {
           sql`EXISTS (SELECT 1 FROM ${employees} WHERE ${employees.id} = ${trainingRecords.employeeId} AND ${employees.companyId} = ${companyId})`
         )
       );
+  }
+
+  async getActiveOverride(orgId: string): Promise<OrgBillingOverride | undefined> {
+    const result = await db
+      .select()
+      .from(orgBillingOverrides)
+      .where(eq(orgBillingOverrides.orgId, orgId))
+      .orderBy(desc(orgBillingOverrides.createdAt))
+      .limit(1);
+    return result[0];
+  }
+
+  async createOverride(data: InsertBillingOverride): Promise<OrgBillingOverride> {
+    await db.delete(orgBillingOverrides).where(eq(orgBillingOverrides.orgId, data.orgId));
+    const result = await db.insert(orgBillingOverrides).values(data).returning();
+    return result[0];
+  }
+
+  async deleteOverride(orgId: string): Promise<void> {
+    await db.delete(orgBillingOverrides).where(eq(orgBillingOverrides.orgId, orgId));
+  }
+
+  async getBillingNotes(orgId: string): Promise<BillingNote[]> {
+    return db
+      .select()
+      .from(billingNotes)
+      .where(eq(billingNotes.orgId, orgId))
+      .orderBy(desc(billingNotes.createdAt));
+  }
+
+  async createBillingNote(data: InsertBillingNote): Promise<BillingNote> {
+    const result = await db.insert(billingNotes).values(data).returning();
+    return result[0];
+  }
+
+  async getDelinquentCompanies(): Promise<Company[]> {
+    return db
+      .select()
+      .from(companies)
+      .where(inArray(companies.billingStatus, ["past_due", "unpaid", "canceled"]));
   }
 }
 

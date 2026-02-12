@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, date, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, date, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -73,12 +73,38 @@ export const adminAuditLogs = pgTable("admin_audit_logs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const OVERRIDE_TYPES = ["none", "discount_percent", "fixed_price", "comped"] as const;
+export type OverrideType = (typeof OVERRIDE_TYPES)[number];
+
+export const orgBillingOverrides = pgTable("org_billing_overrides", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orgId: varchar("org_id").notNull().references(() => companies.id),
+  overrideType: text("override_type").notNull().default("none"),
+  discountPercent: integer("discount_percent"),
+  fixedPriceCents: integer("fixed_price_cents"),
+  note: text("note").notNull(),
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  createdByUserId: varchar("created_by_user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const billingNotes = pgTable("billing_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orgId: varchar("org_id").notNull().references(() => companies.id),
+  note: text("note").notNull(),
+  authorUserId: varchar("author_user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
 export const insertLocationSchema = createInsertSchema(locations).omit({ id: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
 export const insertTrainingRecordSchema = createInsertSchema(trainingRecords).omit({ id: true, createdAt: true });
 export const insertAuditLogSchema = createInsertSchema(adminAuditLogs).omit({ id: true, createdAt: true });
+export const insertBillingOverrideSchema = createInsertSchema(orgBillingOverrides).omit({ id: true, createdAt: true });
+export const insertBillingNoteSchema = createInsertSchema(billingNotes).omit({ id: true, createdAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -92,3 +118,7 @@ export type InsertTrainingRecord = z.infer<typeof insertTrainingRecordSchema>;
 export type TrainingRecord = typeof trainingRecords.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AdminAuditLog = typeof adminAuditLogs.$inferSelect;
+export type InsertBillingOverride = z.infer<typeof insertBillingOverrideSchema>;
+export type OrgBillingOverride = typeof orgBillingOverrides.$inferSelect;
+export type InsertBillingNote = z.infer<typeof insertBillingNoteSchema>;
+export type BillingNote = typeof billingNotes.$inferSelect;

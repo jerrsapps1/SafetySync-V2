@@ -29,6 +29,7 @@ import {
   Moon,
   Languages,
   LogOut,
+  AlertTriangle,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -37,6 +38,7 @@ const adminNavItems = [
   { label: "Organizations", href: "/organizations", icon: Building2 },
   { label: "Support", href: "/support", icon: Headphones },
   { label: "Billing", href: "/billing", icon: CreditCard },
+  { label: "Delinquent", href: "/billing/delinquent", icon: AlertTriangle },
   { label: "Financials", href: "/financials", icon: DollarSign },
   { label: "Audit", href: "/audit", icon: ScrollText },
   { label: "Settings", href: "/settings", icon: Settings },

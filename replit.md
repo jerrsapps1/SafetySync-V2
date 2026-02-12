@@ -8,6 +8,21 @@ The application features a marketing landing page with a GitHub-inspired dark th
 
 ## Recent Updates (February 2026)
 
+**Admin Billing Overrides & CSR Tools (Feb 2026):**
+- org_billing_overrides table: overrideType (none/discount_percent/fixed_price/comped), discountPercent, fixedPriceCents, note, startsAt, endsAt, createdByUserId
+- billing_notes table: orgId, note, authorUserId, createdAt (internal billing notes)
+- POST /api/admin/organizations/:orgId/billing-override (owner_admin only) - set override with audit log
+- DELETE /api/admin/organizations/:orgId/billing-override (owner_admin only) - remove override with audit log
+- GET /api/admin/billing/delinquent - list orgs with past_due/unpaid/canceled status
+- POST /api/admin/organizations/:orgId/portal-link - generate Stripe Customer Portal link (owner_admin + csr_admin)
+- GET/POST /api/admin/organizations/:orgId/billing-notes - internal billing notes (owner_admin + csr_admin)
+- GET /api/admin/organizations/:orgId/billing now includes override data
+- Admin console: Billing Overrides card on org detail page with form (comped/discount/fixed price)
+- Admin console: Internal Billing Notes panel on org detail page
+- Admin console: "Generate Portal Link" button (copies to clipboard)
+- Admin console: /billing/delinquent page for delinquent accounts with portal link and view billing actions
+- Admin sidebar: "Delinquent" nav item under Billing
+
 **Stripe Billing Integration:**
 - Centralized Stripe service: server/stripe.ts (lazy init, checkout, portal, plan catalog)
 - GET /api/billing/plans returns plan catalog from STRIPE_PRICE_PRO/STRIPE_PRICE_ENTERPRISE env vars (fallback to static plans when Stripe not configured)
