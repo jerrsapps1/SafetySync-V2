@@ -90,18 +90,29 @@ The frontend is split into two separate apps for independent deployment:
 - Custom middleware for request logging and JSON parsing
 
 **Authentication & Authorization**
-- **JWT (JSON Web Tokens)** for stateless authentication
+- **JWT (JSON Web Tokens)** for stateless authentication with role claims
+- JWT payload: `{ userId, email, role, orgId }`
+- Roles: `workspace_user`, `owner_admin`, `csr_admin`
 - **bcryptjs** for password hashing
 - Bearer token authentication via Authorization headers
 - Session management with 7-day token expiration
-- Auth middleware protecting API routes
+- `requireAuth` middleware: verifies JWT, attaches `req.user`
+- `requireRole(roles[])` middleware: checks user role against allowed list
 - Login supports both email and username lookup
 - Registration requires email (unique), optional username, password, and company name
 
+**Security Middleware**
+- **helmet** for HTTP security headers (CSP disabled for dev compatibility)
+- **cors** with origin allowlist from `CORS_ORIGINS` env var (auto-allows `*.replit.dev` in dev)
+- **Rate limiting** on auth endpoints (10 req / 15 min per IP) and admin routes (120 req / 5 min per IP)
+- Request body size limit: 2MB
+- Safe error messages (no stack traces or internal details leaked)
+
 **API Design**
 - RESTful API endpoints under `/api` prefix
-- Auth routes: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
-- Resource routes: `/api/employees`, `/api/locations`, `/api/training-records`
+- Auth routes: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, `/api/auth/whoami`
+- Workspace routes: `/api/employees`, `/api/locations`, `/api/training-records`
+- Admin routes (role-protected): `/api/admin/overview`, `/api/admin/tickets`, `/api/admin/audit`
 - Query parameters for filtering (e.g., expiring records by days)
 - Consistent error handling with JSON responses
 
@@ -109,6 +120,7 @@ The frontend is split into two separate apps for independent deployment:
 - Storage abstraction through `IStorage` interface
 - `DbStorage` implementation for database operations
 - Separation of concerns between routes, storage, and auth layers
+- Admin audit logging via `server/audit.ts` → `admin_audit_logs` table
 
 ### Data Storage
 
@@ -118,14 +130,15 @@ The frontend is split into two separate apps for independent deployment:
 - WebSocket-based connection pooling via `@neondatabase/serverless`
 
 **Schema Design**
-- `users` - Authentication and user profiles
-- `companies` - Multi-tenant company records
+- `users` - Authentication and user profiles (includes `role` column)
+- `companies` - Company/organization records
 - `locations` - Work sites/facilities per company
 - `employees` - Worker records with location assignments
 - `training_records` - OSHA training completion tracking
+- `admin_audit_logs` - Audit trail for admin actions
 
 **Key Relationships**
-- Users belong to companies (multi-tenant architecture)
+- Users belong to companies (multi-organization architecture)
 - Employees belong to companies and locations
 - Training records belong to employees
 - All tables use UUID primary keys with `gen_random_uuid()`

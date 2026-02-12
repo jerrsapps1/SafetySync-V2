@@ -1,13 +1,17 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const USER_ROLES = ["workspace_user", "owner_admin", "csr_admin"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
+  role: text("role").notNull().default("workspace_user"),
   companyId: varchar("company_id").references(() => companies.id),
 });
 
@@ -48,11 +52,23 @@ export const trainingRecords = pgTable("training_records", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const adminAuditLogs = pgTable("admin_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  actorUserId: varchar("actor_user_id").notNull(),
+  actorRole: text("actor_role").notNull(),
+  action: text("action").notNull(),
+  targetType: text("target_type"),
+  targetId: text("target_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
 export const insertLocationSchema = createInsertSchema(locations).omit({ id: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
 export const insertTrainingRecordSchema = createInsertSchema(trainingRecords).omit({ id: true, createdAt: true });
+export const insertAuditLogSchema = createInsertSchema(adminAuditLogs).omit({ id: true, createdAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -64,3 +80,5 @@ export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type Employee = typeof employees.$inferSelect;
 export type InsertTrainingRecord = z.infer<typeof insertTrainingRecordSchema>;
 export type TrainingRecord = typeof trainingRecords.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AdminAuditLog = typeof adminAuditLogs.$inferSelect;

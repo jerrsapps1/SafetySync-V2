@@ -1,13 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateToken, hashPassword, comparePassword, authMiddleware } from "./auth";
+import { generateToken, hashPassword, comparePassword, requireAuth, requireRole } from "./auth";
 import { insertUserSchema, insertCompanySchema, insertLocationSchema, insertEmployeeSchema, insertTrainingRecordSchema } from "@shared/schema";
+import { authRateLimit } from "./rate-limit";
+import adminRoutes from "./admin-routes";
+import type { UserRole } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Auth routes
-  app.post("/api/auth/register", async (req, res) => {
+  app.use("/api/admin", adminRoutes);
+
+  app.post("/api/auth/register", authRateLimit, async (req, res) => {
     try {
       const { username, email, password, companyName } = req.body;
       
@@ -34,7 +38,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = generateToken({ 
         userId: user.id, 
         email: user.email,
-        companyId: user.companyId 
+        role: (user.role as UserRole) || "workspace_user",
+        orgId: user.companyId,
       });
 
       res.json({
@@ -43,6 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: user.id,
           username: user.username,
           email: user.email,
+          role: user.role,
           companyId: user.companyId,
         },
       });
@@ -52,14 +58,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authRateLimit, async (req, res) => {
     try {
       const { email, password } = req.body;
 
-      // Try to find user by email first, then by username
       let user = await storage.getUserByEmail(email);
       if (!user) {
-        user = await storage.getUserByUsername(email); // email field can contain username
+        user = await storage.getUserByUsername(email);
       }
       
       if (!user) {
@@ -74,7 +79,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = generateToken({
         userId: user.id,
         email: user.email,
-        companyId: user.companyId,
+        role: (user.role as UserRole) || "workspace_user",
+        orgId: user.companyId,
       });
 
       res.json({
@@ -83,6 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: user.id,
           username: user.username,
           email: user.email,
+          role: user.role,
           companyId: user.companyId,
         },
       });
@@ -92,7 +99,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/me", authMiddleware, async (req, res) => {
+  app.get("/api/auth/whoami", requireAuth, async (req, res) => {
+    const user = (req as any).user;
+    res.json({
+      userId: user.id,
+      role: user.role,
+      orgId: user.orgId,
+    });
+  });
+
+  app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).user.id;
       const user = await storage.getUser(userId);
@@ -105,6 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
         companyId: user.companyId,
       });
     } catch (error: any) {
@@ -113,8 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company routes
-  app.get("/api/companies/:id", authMiddleware, async (req, res) => {
+  app.get("/api/companies/:id", requireAuth, async (req, res) => {
     try {
       const company = await storage.getCompany(req.params.id);
       if (!company) {
@@ -126,10 +142,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Location routes
-  app.get("/api/locations", authMiddleware, async (req, res) => {
+  app.get("/api/locations", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -140,9 +155,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/locations", authMiddleware, async (req, res) => {
+  app.post("/api/locations", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -159,10 +174,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Employee routes
-  app.get("/api/employees", authMiddleware, async (req, res) => {
+  app.get("/api/employees", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -173,9 +187,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees/:id", authMiddleware, async (req, res) => {
+  app.get("/api/employees/:id", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -190,9 +204,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/employees", authMiddleware, async (req, res) => {
+  app.post("/api/employees", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -209,9 +223,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employees/:id", authMiddleware, async (req, res) => {
+  app.patch("/api/employees/:id", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -226,9 +240,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/employees/:id", authMiddleware, async (req, res) => {
+  app.delete("/api/employees/:id", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -240,10 +254,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Training record routes
-  app.get("/api/training-records", authMiddleware, async (req, res) => {
+  app.get("/api/training-records", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -255,9 +268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/training-records/expiring", authMiddleware, async (req, res) => {
+  app.get("/api/training-records/expiring", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -270,9 +283,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees/:employeeId/training-records", authMiddleware, async (req, res) => {
+  app.get("/api/employees/:employeeId/training-records", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -284,9 +297,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/training-records", authMiddleware, async (req, res) => {
+  app.post("/api/training-records", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -308,9 +321,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/training-records/:id", authMiddleware, async (req, res) => {
+  app.patch("/api/training-records/:id", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -325,9 +338,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/training-records/:id", authMiddleware, async (req, res) => {
+  app.delete("/api/training-records/:id", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.companyId;
+      const companyId = (req as any).user.orgId;
       if (!companyId) {
         return res.status(403).json({ error: "No company associated with user" });
       }
@@ -339,7 +352,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Seed route (development only)
   if (process.env.NODE_ENV === "development") {
     app.post("/api/dev/seed", async (req, res) => {
       try {
