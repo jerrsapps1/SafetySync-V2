@@ -23,6 +23,7 @@ export const companies = pgTable("companies", {
   billingStatus: text("billing_status").notNull().default("trial"),
   trialEndDate: timestamp("trial_end_date"),
   onboardingCompleted: text("onboarding_completed").notNull().default("false"),
+  stripeCustomerId: text("stripe_customer_id"),
   country: text("country").default("US"),
   state: text("state"),
   phone: text("phone"),
