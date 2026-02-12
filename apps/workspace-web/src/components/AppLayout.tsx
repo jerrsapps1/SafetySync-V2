@@ -38,8 +38,6 @@ import {
   Building2,
   ChevronDown,
   LogOut,
-  Crown,
-  Headphones,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -53,14 +51,9 @@ const workspaceNavItems = [
   { key: "nav.settings", href: "/settings", icon: Settings },
 ];
 
-const ownerNavItems = [
-  { key: "nav.ownerDashboard", href: "/owner/dashboard", icon: Crown },
-  { key: "nav.ownerSupport", href: "/owner/support", icon: Headphones },
-];
-
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { user, logout, role } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { t, lang, toggleLang } = useI18n();
   const { activeOrg, setActiveOrg, organizations } = useOrganization();
@@ -70,7 +63,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     setLocation("/");
   };
 
-  const navItems = role === "owner" ? [...workspaceNavItems, ...ownerNavItems] : workspaceNavItems;
+  const navItems = workspaceNavItems;
 
   const style = {
     "--sidebar-width": "15rem",

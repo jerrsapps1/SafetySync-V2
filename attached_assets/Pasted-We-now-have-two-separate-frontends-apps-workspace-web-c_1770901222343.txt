@@ -1,0 +1,127 @@
+We now have two separate frontends:
+- apps/workspace-web (customer app)
+- apps/admin-console (admin app)
+They both talk to the same backend in server/.
+
+GOAL: Harden security so admin-console is protected by BACKEND rules (not just hidden UI).
+We will implement:
+- role-based route protection for /api/admin/*
+- rate limiting on auth endpoints
+- secure CORS configuration that allows workspace + admin origins
+- audit logging for admin actions (minimal v1)
+- safe “whoami” endpoint to confirm auth + role
+
+HARD RULES
+- Do NOT add payment logic yet.
+- Do NOT add complex multi-tenant wording. Use “organization/company account”.
+- Do NOT change the database schema unless absolutely required.
+- Keep code minimal, clean, and easy to extend.
+- All admin authorization must be enforced server-side.
+
+STEP A — Standardize Auth + Role Claims
+1) Ensure JWT contains:
+- userId
+- role (workspace_user, owner_admin, csr_admin)
+- orgId (for workspace_user; can be null for owner_admin)
+2) Add a middleware:
+- requireAuth: verifies JWT, attaches req.user
+3) Add a middleware:
+- requireRole(allowedRoles[]): checks req.user.role is allowed
+4) Add endpoint:
+GET /api/auth/whoami
+returns { userId, role, orgId }
+
+DONE CHECK
+- If no token: /whoami returns 401
+- If token: /whoami returns correct role/orgId
+
+STEP B — Split Routes Clearly
+Create route groups:
+- /api/workspace/* (customer app routes)
+- /api/admin/* (admin console routes)
+
+For now, admin routes can be minimal placeholders returning mock values, but must be protected by requireRole.
+
+Implement:
+GET /api/admin/overview
+- returns minimal stats:
+  organizationsCount
+  usersCount
+  openTicketsCount
+Protected: requireRole(['owner_admin','csr_admin'])
+
+GET /api/admin/tickets
+- returns ticket list (can be mock if DB not ready)
+Protected: requireRole(['owner_admin','csr_admin'])
+
+PATCH /api/admin/tickets/:id
+- update status or add note (mock ok)
+Protected: requireRole(['owner_admin','csr_admin'])
+
+DONE CHECK
+- Workspace user token gets 403 on /api/admin/*
+- Admin token succeeds
+
+STEP C — Rate Limit Auth + Sensitive Routes
+Add rate limiting middleware for:
+- POST /api/auth/login
+- POST /api/auth/register (if exists)
+- POST /api/auth/forgot-password (if exists)
+Suggested: 10 requests / 15 minutes per IP.
+
+Also rate limit:
+- /api/admin/* (tighter): e.g., 120 req / 5 minutes per IP (adjustable)
+
+Use an established library if you already have one; otherwise implement lightweight in-memory limiter (OK for now, but keep it isolated so we can swap later for Redis).
+
+DONE CHECK
+- Hitting login repeatedly triggers 429
+- Normal use still works
+
+STEP D — CORS Lockdown
+Configure CORS so the backend only accepts requests from:
+- local dev origins (http://localhost:5173, 5174 etc)
+- production workspace origin (https://app.safetysync.ai)
+- production admin origin (https://admin.safetysync.ai)
+
+Implementation requirements:
+- Use an allowlist array from env:
+  CORS_ORIGINS="https://app.safetysync.ai,https://admin.safetysync.ai,http://localhost:5173,http://localhost:5174"
+- Parse and validate.
+- Ensure credentials behavior matches your auth approach (if JWT is in Authorization header, you can keep credentials false).
+
+DONE CHECK
+- Requests from allowed origins succeed
+- Disallowed origin blocked
+
+STEP E — Admin Audit Log (Minimal V1)
+Add a minimal audit logger for admin actions:
+- On admin routes (overview, tickets update), log:
+  timestamp, actorUserId, actorRole, action, targetType, targetId, metadata
+Store it:
+- If DB exists and you have a table ready, create `admin_audit_logs` table.
+- If you want to avoid migrations for now, write to a rotating JSON file in server/logs/ (dev only) AND include TODO to move to DB.
+
+Expose:
+GET /api/admin/audit
+Protected: requireRole(['owner_admin'])
+
+DONE CHECK
+- Updating a ticket creates an audit event
+
+STEP F — Security Defaults
+1) Ensure helmet is enabled (if not already).
+2) Ensure request body size limits are sane (e.g., 1–2mb for JSON).
+3) Ensure error messages on auth do not leak details.
+
+DONE CHECK
+- Server still runs, no breaking changes.
+
+DELIVERABLE OUTPUT
+At the end, print:
+1) files added/modified
+2) env vars needed (.env.example updates)
+3) test instructions:
+   - login as workspace user -> try /api/admin/overview -> should 403
+   - login as admin -> /api/admin/overview -> should 200
+   - spam login -> should 429

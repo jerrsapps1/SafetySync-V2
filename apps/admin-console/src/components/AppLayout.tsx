@@ -2,7 +2,6 @@ import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useI18n } from "@/contexts/I18nContext";
-import { useOrganization } from "@/contexts/OrganizationContext";
 import {
   Sidebar,
   SidebarContent,
@@ -17,60 +16,42 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
-  Users,
-  FileText,
-  Award,
+  Building2,
+  Headphones,
   CreditCard,
-  ShieldCheck,
+  DollarSign,
+  ScrollText,
   Settings,
   Sun,
   Moon,
   Languages,
-  Building2,
-  ChevronDown,
   LogOut,
-  Crown,
-  Headphones,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-const workspaceNavItems = [
-  { key: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { key: "nav.employees", href: "/employees", icon: Users },
-  { key: "nav.documents", href: "/documents", icon: FileText },
-  { key: "nav.certificates", href: "/certificates", icon: Award },
-  { key: "nav.walletCards", href: "/wallet-cards", icon: CreditCard },
-  { key: "nav.compliance", href: "/compliance", icon: ShieldCheck },
-  { key: "nav.settings", href: "/settings", icon: Settings },
-];
-
-const ownerNavItems = [
-  { key: "nav.ownerDashboard", href: "/owner/dashboard", icon: Crown },
-  { key: "nav.ownerSupport", href: "/owner/support", icon: Headphones },
+const adminNavItems = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Organizations", href: "/organizations", icon: Building2 },
+  { label: "Support", href: "/support", icon: Headphones },
+  { label: "Billing", href: "/billing", icon: CreditCard },
+  { label: "Financials", href: "/financials", icon: DollarSign },
+  { label: "Audit", href: "/audit", icon: ScrollText },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { user, logout, role } = useAuth();
+  const { logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { t, lang, toggleLang } = useI18n();
-  const { activeOrg, setActiveOrg, organizations } = useOrganization();
 
   const handleLogout = () => {
     logout();
-    setLocation("/");
+    setLocation("/login");
   };
-
-  const navItems = role === "owner" ? [...workspaceNavItems, ...ownerNavItems] : workspaceNavItems;
 
   const style = {
     "--sidebar-width": "15rem",
@@ -84,16 +65,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <SidebarHeader className="p-4">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-indigo-500/80 via-sky-500/80 to-emerald-400/80 shadow-md shadow-sky-500/40 flex-shrink-0" />
-              <span className="text-base font-semibold tracking-tight">SafetySync.ai</span>
+              <span className="text-base font-semibold tracking-tight">SyncAI Admin</span>
             </div>
           </SidebarHeader>
 
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel>{t("nav.dashboard")}</SidebarGroupLabel>
+              <SidebarGroupLabel>Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navItems.map((item) => (
+                  {adminNavItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         asChild
@@ -102,7 +83,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                       >
                         <Link href={item.href}>
                           <item.icon className="h-4 w-4" />
-                          <span>{t(item.key)}</span>
+                          <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -123,27 +104,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <header className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b px-3 py-2 bg-background/80 backdrop-blur-md">
             <div className="flex items-center gap-2">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" data-testid="dropdown-org">
-                    <Building2 className="h-4 w-4 mr-1" />
-                    <span className="truncate max-w-[160px]">{activeOrg.name}</span>
-                    <ChevronDown className="h-3 w-3 ml-1 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {organizations.map((org) => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      onClick={() => setActiveOrg(org)}
-                      data-testid={`org-option-${org.id}`}
-                    >
-                      {org.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
 
             <div className="flex items-center gap-1">

@@ -6,50 +6,28 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { I18nProvider } from "@/contexts/I18nContext";
-import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import AppLayout from "@/components/AppLayout";
-import Landing from "@/pages/landing";
 import Login from "@/pages/login";
-import Dashboard from "@/pages/dashboard";
-import Employees from "@/pages/employees";
-import EmployeeProfile from "@/pages/employee-profile";
-import Documents from "@/pages/documents";
-import Certificates from "@/pages/certificates";
-import WalletCards from "@/pages/wallet-cards";
-import Compliance from "@/pages/compliance";
-import SettingsPage from "@/pages/settings";
-import OwnerDashboard from "@/pages/owner-dashboard";
-import OwnerSupport from "@/pages/owner-support";
-import Features from "@/pages/features";
-import Pricing from "@/pages/pricing";
-import Demo from "@/pages/demo";
-import Security from "@/pages/security";
+import AdminDashboard from "@/pages/admin-dashboard";
+import Organizations from "@/pages/organizations";
+import AdminSupport from "@/pages/admin-support";
+import Billing from "@/pages/billing";
+import Financials from "@/pages/financials";
+import Audit from "@/pages/audit";
+import AdminSettings from "@/pages/admin-settings";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
-  const { isAuthenticated, role } = useAuth();
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
   return (
     <AppLayout>
       <Switch>
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/employees/:id" component={EmployeeProfile} />
-        <Route path="/employees" component={Employees} />
-        <Route path="/documents" component={Documents} />
-        <Route path="/certificates" component={Certificates} />
-        <Route path="/wallet-cards" component={WalletCards} />
-        <Route path="/compliance" component={Compliance} />
-        <Route path="/settings" component={SettingsPage} />
-        {role === "owner" && (
-          <>
-            <Route path="/owner/dashboard" component={OwnerDashboard} />
-            <Route path="/owner/support" component={OwnerSupport} />
-          </>
-        )}
+        <Route path="/dashboard" component={AdminDashboard} />
+        <Route path="/organizations" component={Organizations} />
+        <Route path="/support" component={AdminSupport} />
+        <Route path="/billing" component={Billing} />
+        <Route path="/financials" component={Financials} />
+        <Route path="/audit" component={Audit} />
+        <Route path="/settings" component={AdminSettings} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
@@ -60,21 +38,8 @@ function Router() {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
 
-  const publicPaths = ["/", "/login", "/features", "/pricing", "/demo", "/security"];
-  const isPublicPath = publicPaths.includes(location);
-
-  if (isPublicPath) {
-    return (
-      <Switch>
-        <Route path="/" component={Landing} />
-        <Route path="/login" component={Login} />
-        <Route path="/features" component={Features} />
-        <Route path="/pricing" component={Pricing} />
-        <Route path="/demo" component={Demo} />
-        <Route path="/security" component={Security} />
-        <Route component={NotFound} />
-      </Switch>
-    );
+  if (location === "/login") {
+    return <Login />;
   }
 
   if (!isAuthenticated) {
@@ -90,12 +55,10 @@ function App() {
       <ThemeProvider>
         <I18nProvider>
           <AuthProvider>
-            <OrganizationProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Router />
-              </TooltipProvider>
-            </OrganizationProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
           </AuthProvider>
         </I18nProvider>
       </ThemeProvider>

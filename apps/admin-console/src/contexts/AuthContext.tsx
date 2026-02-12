@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-type UserRole = "workspace" | "owner";
+type UserRole = "admin";
 
 interface User {
   id: string;
@@ -22,16 +22,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const MOCK_WORKSPACE_USER: User = {
-  id: "user-1",
-  username: "safetymanager",
-  email: "manager@democonstruction.com",
-  companyId: "org-1",
-};
-
-const MOCK_OWNER_USER: User = {
-  id: "user-owner",
-  username: "owner",
+const MOCK_ADMIN_USER: User = {
+  id: "admin-1",
+  username: "admin",
   email: "admin@syncai.com",
   companyId: null,
 };
@@ -39,62 +32,39 @@ const MOCK_OWNER_USER: User = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [role, setRole] = useState<UserRole>("workspace");
+  const [role, setRole] = useState<UserRole>("admin");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("safetysync-role") as UserRole | null;
-    const storedAuth = localStorage.getItem("safetysync-authed");
+    const storedRole = localStorage.getItem("admin-console-role") as UserRole | null;
+    const storedAuth = localStorage.getItem("admin-console-authed");
 
     if (storedAuth === "true" && storedRole) {
       setRole(storedRole);
-      setUser(storedRole === "owner" ? MOCK_OWNER_USER : MOCK_WORKSPACE_USER);
+      setUser(MOCK_ADMIN_USER);
       setToken("mock-token");
     }
     setIsLoading(false);
   }, []);
 
   const loginAs = (r: UserRole) => {
-    const u = r === "owner" ? MOCK_OWNER_USER : MOCK_WORKSPACE_USER;
-    setUser(u);
+    setUser(MOCK_ADMIN_USER);
     setToken("mock-token");
     setRole(r);
-    localStorage.setItem("safetysync-role", r);
-    localStorage.setItem("safetysync-authed", "true");
+    localStorage.setItem("admin-console-role", r);
+    localStorage.setItem("admin-console-authed", "true");
   };
 
-  const login = async (credentials: { email: string; password: string }) => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Login failed");
-      }
-
-      const data = await response.json();
-      setToken(data.token);
-      setUser(data.user);
-      setRole("workspace");
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("safetysync-role", "workspace");
-      localStorage.setItem("safetysync-authed", "true");
-    } catch {
-      loginAs("workspace");
-    }
+  const login = async (_credentials: { email: string; password: string }) => {
+    loginAs("admin");
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    setRole("workspace");
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("safetysync-role");
-    localStorage.removeItem("safetysync-authed");
+    setRole("admin");
+    localStorage.removeItem("admin-console-role");
+    localStorage.removeItem("admin-console-authed");
   };
 
   return (

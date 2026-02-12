@@ -25,12 +25,6 @@ export default function Login() {
     setLocation("/dashboard");
   };
 
-  const handleOwnerLogin = () => {
-    loginAs("owner");
-    toast({ title: t("auth.loginSuccess"), description: t("auth.welcomeBack") });
-    setLocation("/owner/dashboard");
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="absolute top-4 right-4 flex items-center gap-1">
@@ -53,25 +47,12 @@ export default function Login() {
 
         <GlassCard>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center mb-6">
-              {lang === "es" ? "Elige cómo quieres entrar:" : "Choose how to sign in:"}
-            </p>
-
             <Button
               className="w-full"
               onClick={handleWorkspaceLogin}
               data-testid="button-login-workspace"
             >
               {t("auth.signInWorkspace")}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleOwnerLogin}
-              data-testid="button-login-owner"
-            >
-              {t("auth.signInOwner")}
             </Button>
           </div>
         </GlassCard>

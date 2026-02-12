@@ -18,8 +18,6 @@ import Certificates from "@/pages/certificates";
 import WalletCards from "@/pages/wallet-cards";
 import Compliance from "@/pages/compliance";
 import SettingsPage from "@/pages/settings";
-import OwnerDashboard from "@/pages/owner-dashboard";
-import OwnerSupport from "@/pages/owner-support";
 import Features from "@/pages/features";
 import Pricing from "@/pages/pricing";
 import Demo from "@/pages/demo";
@@ -27,7 +25,7 @@ import Security from "@/pages/security";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     return null;
@@ -44,12 +42,6 @@ function AppRoutes() {
         <Route path="/wallet-cards" component={WalletCards} />
         <Route path="/compliance" component={Compliance} />
         <Route path="/settings" component={SettingsPage} />
-        {role === "owner" && (
-          <>
-            <Route path="/owner/dashboard" component={OwnerDashboard} />
-            <Route path="/owner/support" component={OwnerSupport} />
-          </>
-        )}
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

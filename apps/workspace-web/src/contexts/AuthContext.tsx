@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-type UserRole = "workspace" | "owner";
-
 interface User {
   id: string;
   username: string;
@@ -12,9 +10,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  role: UserRole;
   login: (credentials: { email: string; password: string }) => Promise<void>;
-  loginAs: (role: UserRole) => void;
+  loginAs: (role: string) => void;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -29,37 +26,25 @@ const MOCK_WORKSPACE_USER: User = {
   companyId: "org-1",
 };
 
-const MOCK_OWNER_USER: User = {
-  id: "user-owner",
-  username: "owner",
-  email: "admin@syncai.com",
-  companyId: null,
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [role, setRole] = useState<UserRole>("workspace");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("safetysync-role") as UserRole | null;
     const storedAuth = localStorage.getItem("safetysync-authed");
 
-    if (storedAuth === "true" && storedRole) {
-      setRole(storedRole);
-      setUser(storedRole === "owner" ? MOCK_OWNER_USER : MOCK_WORKSPACE_USER);
+    if (storedAuth === "true") {
+      setUser(MOCK_WORKSPACE_USER);
       setToken("mock-token");
     }
     setIsLoading(false);
   }, []);
 
-  const loginAs = (r: UserRole) => {
-    const u = r === "owner" ? MOCK_OWNER_USER : MOCK_WORKSPACE_USER;
-    setUser(u);
+  const loginAs = (_r: string) => {
+    setUser(MOCK_WORKSPACE_USER);
     setToken("mock-token");
-    setRole(r);
-    localStorage.setItem("safetysync-role", r);
+    localStorage.setItem("safetysync-role", "workspace");
     localStorage.setItem("safetysync-authed", "true");
   };
 
@@ -79,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setToken(data.token);
       setUser(data.user);
-      setRole("workspace");
       localStorage.setItem("auth_token", data.token);
       localStorage.setItem("safetysync-role", "workspace");
       localStorage.setItem("safetysync-authed", "true");
@@ -91,14 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
-    setRole("workspace");
     localStorage.removeItem("auth_token");
     localStorage.removeItem("safetysync-role");
     localStorage.removeItem("safetysync-authed");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, role, login, loginAs, logout, isLoading, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, login, loginAs, logout, isLoading, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );
