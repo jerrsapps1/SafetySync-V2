@@ -1,5 +1,14 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
+
+function resolveUrl(url: string): string {
+  if (API_BASE && url.startsWith("/")) {
+    return `${API_BASE}${url}`;
+  }
+  return url;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -19,7 +28,7 @@ export async function apiRequest(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(resolveUrl(url), {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -43,7 +52,8 @@ export const getQueryFn: <T>(options: {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    const res = await fetch(resolveUrl(url), {
       credentials: "include",
       headers,
     });
