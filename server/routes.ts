@@ -6,7 +6,7 @@ import { insertUserSchema, insertCompanySchema, insertLocationSchema, insertEmpl
 import { authRateLimit } from "./rate-limit";
 import adminRoutes from "./admin-routes";
 import type { UserRole } from "@shared/schema";
-import { isStripeConfigured, getPlansFromEnv, getOrCreateStripeCustomer, createCheckoutSession, createPortalSession } from "./stripe";
+import { isStripeConfigured, getPlansFromEnv, getOrCreateStripeCustomer, createCheckoutSession, createPortalSession, getSubscriptionStatus } from "./stripe";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -454,23 +454,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employeesList = await storage.getEmployees(companyId);
       const records = await storage.getTrainingRecordsByCompany(companyId);
 
-      const mockInvoices = company.billingStatus !== "trial" ? [
-        { id: "inv-001", date: "2026-01-15", amount: "$49.00", status: "paid" },
-        { id: "inv-002", date: "2025-12-15", amount: "$49.00", status: "paid" },
-      ] : [];
+      let plan = company.plan || "trial";
+      let billingStatus = company.billingStatus || "trial";
+      let trialEndsAt = company.trialEndDate;
+
+      if (company.stripeSubscriptionId && isStripeConfigured()) {
+        try {
+          const subStatus = await getSubscriptionStatus(company.stripeSubscriptionId);
+          billingStatus = subStatus.status;
+          if (subStatus.planKey) {
+            plan = subStatus.planKey;
+          }
+          if (billingStatus === "active" || billingStatus === "past_due") {
+            if (company.plan !== plan || company.billingStatus !== billingStatus) {
+              await storage.updateCompany(companyId, { plan, billingStatus });
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch Stripe subscription status:", err);
+        }
+      }
 
       res.json({
-        plan: company.plan || "trial",
-        billingStatus: company.billingStatus || "trial",
-        trialEndsAt: company.trialEndDate,
+        plan,
+        billingStatus,
+        trialEndsAt,
         employeesCount: employeesList.length,
         trainingRecordsCount: records.length,
         certificatesCount: 0,
-        invoices: mockInvoices,
+        invoices: [],
       });
     } catch (error: any) {
       console.error("Billing summary error:", error);
       res.status(500).json({ error: "Failed to get billing summary" });
+    }
+  });
+
+  app.post("/api/billing/checkout-complete", requireAuth, async (req, res) => {
+    try {
+      if (!isStripeConfigured()) {
+        return res.status(501).json({ error: "Stripe is not configured." });
+      }
+
+      const { sessionId } = req.body;
+      if (!sessionId || typeof sessionId !== "string") {
+        return res.status(400).json({ error: "Missing sessionId" });
+      }
+
+      const companyId = (req as any).user.orgId;
+      if (!companyId) {
+        return res.status(403).json({ error: "No company associated with user" });
+      }
+
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      const { getCheckoutSession: fetchSession } = await import("./stripe");
+      const session = await fetchSession(sessionId);
+
+      if (session.metadata?.org_id !== companyId) {
+        return res.status(403).json({ error: "Session does not belong to this organization" });
+      }
+
+      const subscriptionId = typeof session.subscription === "string"
+        ? session.subscription
+        : (session.subscription as any)?.id;
+
+      if (!subscriptionId) {
+        return res.json({ status: "pending" });
+      }
+
+      const planKey = session.metadata?.plan_key;
+      if (!planKey) {
+        return res.status(400).json({ error: "No plan_key in session metadata" });
+      }
+
+      if (subscriptionId !== company.stripeSubscriptionId) {
+        await storage.updateCompany(companyId, {
+          stripeSubscriptionId: subscriptionId,
+          stripeCustomerId: company.stripeCustomerId || (typeof session.customer === "string" ? session.customer : undefined),
+          plan: planKey,
+          billingStatus: "active",
+        });
+      }
+
+      res.json({ status: "activated", plan: planKey });
+    } catch (error: any) {
+      console.error("Checkout complete error:", error);
+      res.status(500).json({ error: "Failed to process checkout completion" });
     }
   });
 
@@ -561,7 +634,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fullSuccessUrl = successUrl.startsWith("http") ? successUrl : `${baseUrl}${successUrl}`;
       const fullCancelUrl = cancelUrl.startsWith("http") ? cancelUrl : `${baseUrl}${cancelUrl}`;
 
-      const url = await createCheckoutSession(customerId, plan.priceId, fullSuccessUrl, fullCancelUrl);
+      const url = await createCheckoutSession(
+        customerId,
+        plan.priceId,
+        fullSuccessUrl,
+        fullCancelUrl,
+        { orgId: companyId, planKey: plan.planKey },
+      );
       res.json({ url });
     } catch (error: any) {
       console.error("Billing checkout error:", error);

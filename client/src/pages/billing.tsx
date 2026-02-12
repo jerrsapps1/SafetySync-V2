@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,26 @@ export default function BillingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   const isMockAuth = token === "mock-token";
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (params.get("upgraded") === "1" && sessionId && !isMockAuth) {
+      apiRequest("POST", "/api/billing/checkout-complete", { sessionId })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.status === "activated") {
+            toast({
+              title: t("billing.upgrade"),
+              description: t("billing.upgradeSuccess"),
+            });
+          }
+          queryClient.invalidateQueries({ queryKey: ["/api/billing/summary"] });
+        })
+        .catch(() => {});
+      window.history.replaceState({}, "", "/billing");
+    }
+  }, []);
 
   const mockBilling: BillingSummary = {
     plan: "trial",
@@ -168,7 +188,7 @@ export default function BillingPage() {
     try {
       const res = await apiRequest("POST", "/api/billing/checkout", {
         planKey,
-        successUrl: "/billing?upgraded=1",
+        successUrl: "/billing?upgraded=1&session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: "/billing",
       });
       const data = await res.json();

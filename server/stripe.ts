@@ -96,6 +96,7 @@ export async function createCheckoutSession(
   priceId: string,
   successUrl: string,
   cancelUrl: string,
+  metadata: { orgId: string; planKey: string },
 ): Promise<string> {
   const stripe = getStripe();
 
@@ -106,9 +107,55 @@ export async function createCheckoutSession(
     success_url: successUrl,
     cancel_url: cancelUrl,
     allow_promotion_codes: true,
+    metadata: {
+      org_id: metadata.orgId,
+      plan_key: metadata.planKey,
+    },
+    subscription_data: {
+      metadata: {
+        org_id: metadata.orgId,
+        plan_key: metadata.planKey,
+      },
+    },
   });
 
   return session.url!;
+}
+
+export async function getSubscriptionStatus(subscriptionId: string): Promise<{
+  status: string;
+  planKey: string | null;
+  currentPeriodEnd: Date | null;
+}> {
+  const stripe = getStripe();
+  const sub = await stripe.subscriptions.retrieve(subscriptionId);
+
+  const statusMap: Record<string, string> = {
+    active: "active",
+    past_due: "past_due",
+    canceled: "canceled",
+    incomplete: "active",
+    incomplete_expired: "canceled",
+    trialing: "trial",
+    unpaid: "past_due",
+    paused: "canceled",
+  };
+
+  return {
+    status: statusMap[sub.status] || sub.status,
+    planKey: (sub.metadata?.plan_key as string) || null,
+    currentPeriodEnd: sub.current_period_end
+      ? new Date(sub.current_period_end * 1000)
+      : null,
+  };
+}
+
+export async function getCheckoutSession(sessionId: string) {
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["subscription"],
+  });
+  return session;
 }
 
 export async function createPortalSession(
