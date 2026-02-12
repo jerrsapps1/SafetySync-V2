@@ -17,6 +17,15 @@ export function isStripeConfigured(): boolean {
   return !!process.env.STRIPE_SECRET_KEY;
 }
 
+export function constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {
+  const stripe = getStripe();
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
+  }
+  return stripe.webhooks.constructEvent(rawBody, signature, secret);
+}
+
 export interface PlanInfo {
   planKey: string;
   name: string;

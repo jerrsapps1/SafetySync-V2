@@ -25,6 +25,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   
   getCompany(id: string): Promise<Company | undefined>;
+  getCompanyByStripeCustomerId(stripeCustomerId: string): Promise<Company | undefined>;
   createCompany(company: InsertCompany): Promise<Company>;
   updateCompany(id: string, data: Partial<InsertCompany>): Promise<Company>;
   
@@ -68,6 +69,11 @@ export class DbStorage implements IStorage {
 
   async getCompany(id: string): Promise<Company | undefined> {
     const result = await db.select().from(companies).where(eq(companies.id, id));
+    return result[0];
+  }
+
+  async getCompanyByStripeCustomerId(stripeCustomerId: string): Promise<Company | undefined> {
+    const result = await db.select().from(companies).where(eq(companies.stripeCustomerId, stripeCustomerId));
     return result[0];
   }
 

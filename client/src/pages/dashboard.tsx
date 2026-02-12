@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { useI18n } from "@/contexts/I18nContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganization } from "@/contexts/OrganizationContext";
+import { useEntitlements } from "@/hooks/use-entitlements";
 import { listEmployees, listTrainingRecords, listCertificates } from "@/mock/api";
 import type { MockEmployee, MockTrainingRecord, MockCertificate } from "@/mock/db";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, FileText, Award, AlertTriangle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, FileText, Award, AlertTriangle, Clock, ArrowUpRight } from "lucide-react";
+import { Link } from "wouter";
 
 const recentActivities = [
   { date: "2026-02-10", description: "New training record added for Carlos Martinez - Fall Protection" },
@@ -18,8 +21,8 @@ const recentActivities = [
 
 export default function Dashboard() {
   const { t } = useI18n();
-  const { trialEndDate } = useAuth();
   const { activeOrg } = useOrganization();
+  const { entitlements } = useEntitlements();
 
   const [employees, setEmployees] = useState<MockEmployee[]>([]);
   const [records, setRecords] = useState<MockTrainingRecord[]>([]);
@@ -93,9 +96,10 @@ export default function Dashboard() {
     },
   ];
 
-  const trialDate = trialEndDate ? new Date(trialEndDate) : null;
+  const trialDate = entitlements?.trialEndsAt ? new Date(entitlements.trialEndsAt) : null;
   const trialDaysLeft = trialDate ? Math.max(0, Math.ceil((trialDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
   const formattedTrialDate = trialDate?.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  const atEmployeeLimit = entitlements ? employees.length >= entitlements.employeeLimit : false;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -103,15 +107,58 @@ export default function Dashboard() {
         {t("dashboard.title")}
       </h1>
 
-      {trialDaysLeft !== null && trialDaysLeft >= 0 && (
+      {entitlements?.trialActive && trialDaysLeft !== null && trialDaysLeft >= 0 && (
         <Card className="border-sky-500/30 bg-sky-500/5" data-testid="trial-banner">
+          <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Clock className="h-4 w-4 text-sky-500 flex-shrink-0" />
+              <span className="text-sm">
+                <Badge variant="secondary" className="mr-2">{t("trial.banner")}</Badge>
+                {t("trial.bannerText")} <span className="font-semibold">{formattedTrialDate}</span>
+                {" — "}{trialDaysLeft} {t("trial.daysLeft")}
+              </span>
+            </div>
+            <Link href="/billing">
+              <Button variant="outline" size="sm" data-testid="button-upgrade-from-trial">
+                <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
+                {t("billing.upgrade")}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {!entitlements?.isActive && entitlements?.billingStatus === "canceled" && (
+        <Card className="border-destructive/30 bg-destructive/5" data-testid="canceled-banner">
+          <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-sm text-destructive">{t("billing.statusCanceled")} — {t("billing.upgradeDesc")}</span>
+            <Link href="/billing">
+              <Button variant="default" size="sm" data-testid="button-reactivate">
+                {t("billing.upgrade")}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {!entitlements?.isActive && entitlements?.billingStatus === "past_due" && (
+        <Card className="border-orange-500/30 bg-orange-500/5" data-testid="past-due-banner">
           <CardContent className="p-4 flex items-center gap-3 flex-wrap">
-            <Clock className="h-4 w-4 text-sky-500 flex-shrink-0" />
-            <span className="text-sm">
-              <Badge variant="secondary" className="mr-2">{t("trial.banner")}</Badge>
-              {t("trial.bannerText")} <span className="font-semibold">{formattedTrialDate}</span>
-              {" — "}{trialDaysLeft} {t("trial.daysLeft")}
-            </span>
+            <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+            <span className="text-sm">{t("billing.statusPastDue")} — {t("billing.manageBillingDesc")}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {atEmployeeLimit && (
+        <Card className="border-orange-500/30 bg-orange-500/5" data-testid="employee-limit-banner">
+          <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-sm">{t("entitlements.employeeLimitReached")}</span>
+            <Link href="/billing">
+              <Button variant="outline" size="sm" data-testid="button-upgrade-limit">
+                {t("billing.upgrade")}
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       )}

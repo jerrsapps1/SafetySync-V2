@@ -6,11 +6,159 @@ import { insertUserSchema, insertCompanySchema, insertLocationSchema, insertEmpl
 import { authRateLimit } from "./rate-limit";
 import adminRoutes from "./admin-routes";
 import type { UserRole } from "@shared/schema";
-import { isStripeConfigured, getPlansFromEnv, getOrCreateStripeCustomer, createCheckoutSession, createPortalSession, getSubscriptionStatus } from "./stripe";
+import { isStripeConfigured, getPlansFromEnv, getOrCreateStripeCustomer, createCheckoutSession, createPortalSession, getSubscriptionStatus, constructWebhookEvent } from "./stripe";
+import type { Company } from "@shared/schema";
+
+function getOrgEntitlements(company: Company) {
+  const now = new Date();
+  const trialActive = company.billingStatus === "trial" && company.trialEndDate && new Date(company.trialEndDate) > now;
+  const isActive = company.billingStatus === "active" || trialActive;
+
+  const planLimits: Record<string, { employeeLimit: number; canUseAIIngestion: boolean; canExportReports: boolean }> = {
+    trial:      { employeeLimit: 25,    canUseAIIngestion: true,  canExportReports: true },
+    starter:    { employeeLimit: 5,     canUseAIIngestion: false, canExportReports: false },
+    pro:        { employeeLimit: 100,   canUseAIIngestion: true,  canExportReports: true },
+    enterprise: { employeeLimit: 99999, canUseAIIngestion: true,  canExportReports: true },
+  };
+
+  const limits = planLimits[company.plan] || planLimits.starter;
+
+  return {
+    plan: company.plan,
+    billingStatus: company.billingStatus,
+    trialEndsAt: company.trialEndDate?.toISOString() || null,
+    trialActive: !!trialActive,
+    isActive,
+    employeeLimit: limits.employeeLimit,
+    canUseAIIngestion: isActive ? limits.canUseAIIngestion : false,
+    canExportReports: isActive ? limits.canExportReports : false,
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
   app.use("/api/admin", adminRoutes);
+
+  app.post("/api/billing/webhook", async (req, res) => {
+    try {
+      if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
+        return res.status(501).json({ error: "Webhook not configured" });
+      }
+
+      const signature = req.headers["stripe-signature"] as string;
+      if (!signature) {
+        return res.status(400).json({ error: "Missing stripe-signature header" });
+      }
+
+      const rawBody = (req as any).rawBody as Buffer;
+      if (!rawBody) {
+        return res.status(400).json({ error: "Missing raw body" });
+      }
+
+      let event;
+      try {
+        event = constructWebhookEvent(rawBody, signature);
+      } catch (err: any) {
+        console.error("Webhook signature verification failed");
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+
+      res.status(200).json({ received: true });
+
+      try {
+        switch (event.type) {
+          case "checkout.session.completed": {
+            const session = event.data.object as any;
+            const orgId = session.metadata?.org_id;
+            const planKey = session.metadata?.plan_key;
+            const subscriptionId = typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription?.id;
+            const customerId = typeof session.customer === "string"
+              ? session.customer
+              : session.customer?.id;
+
+            if (orgId && planKey && subscriptionId) {
+              const updateData: Record<string, any> = {
+                plan: planKey,
+                billingStatus: "active",
+                stripeSubscriptionId: subscriptionId,
+              };
+              if (customerId) {
+                updateData.stripeCustomerId = customerId;
+              }
+              await storage.updateCompany(orgId, updateData);
+              console.log(`Webhook: checkout.session.completed - org=${orgId} plan=${planKey}`);
+            }
+            break;
+          }
+
+          case "customer.subscription.updated": {
+            const subscription = event.data.object as any;
+            const customerId = typeof subscription.customer === "string"
+              ? subscription.customer
+              : subscription.customer?.id;
+
+            if (!customerId) break;
+
+            const company = await storage.getCompanyByStripeCustomerId(customerId);
+            if (!company) {
+              console.error(`Webhook: subscription.updated - no company for customer ${customerId}`);
+              break;
+            }
+
+            const statusMap: Record<string, string> = {
+              active: "active",
+              past_due: "past_due",
+              canceled: "canceled",
+              unpaid: "past_due",
+              incomplete: "active",
+              incomplete_expired: "canceled",
+              trialing: "trial",
+              paused: "canceled",
+            };
+
+            const newStatus = statusMap[subscription.status] || subscription.status;
+            const planKey = subscription.metadata?.plan_key || company.plan;
+
+            await storage.updateCompany(company.id, {
+              billingStatus: newStatus,
+              plan: planKey,
+              stripeSubscriptionId: subscription.id,
+            });
+            console.log(`Webhook: subscription.updated - org=${company.id} status=${newStatus}`);
+            break;
+          }
+
+          case "customer.subscription.deleted": {
+            const subscription = event.data.object as any;
+            const customerId = typeof subscription.customer === "string"
+              ? subscription.customer
+              : subscription.customer?.id;
+
+            if (!customerId) break;
+
+            const company = await storage.getCompanyByStripeCustomerId(customerId);
+            if (!company) break;
+
+            await storage.updateCompany(company.id, {
+              billingStatus: "canceled",
+              plan: "starter",
+            });
+            console.log(`Webhook: subscription.deleted - org=${company.id} downgraded to starter`);
+            break;
+          }
+        }
+      } catch (processingErr) {
+        console.error("Webhook event processing error:", processingErr);
+      }
+    } catch (error: any) {
+      console.error("Webhook handler error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Webhook handler error" });
+      }
+    }
+  });
 
   app.post("/api/auth/create-account", authRateLimit, async (req, res) => {
     try {
@@ -689,6 +837,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(501).json({ error: "Stripe is not configured." });
       }
       res.status(500).json({ error: "Failed to create billing portal session" });
+    }
+  });
+
+  app.get("/api/workspace/entitlements", requireAuth, async (req, res) => {
+    try {
+      const companyId = (req as any).user.orgId;
+      if (!companyId) {
+        return res.status(403).json({ error: "No company associated with user" });
+      }
+
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      const entitlements = getOrgEntitlements(company);
+      res.json(entitlements);
+    } catch (error: any) {
+      console.error("Entitlements error:", error);
+      res.status(500).json({ error: "Failed to get entitlements" });
     }
   });
 
