@@ -1,23 +1,18 @@
-import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import GlassCard from "@/components/GlassCard";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Sun, Moon, Languages } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { loginAs } = useAuth();
-  const { t, toggleLang, lang } = useI18n();
+  const { t, toggleLang } = useI18n();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
 
   const handleWorkspaceLogin = () => {
     loginAs("workspace");
@@ -59,48 +54,11 @@ export default function Login() {
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           {t("auth.dontHaveAccount")}{" "}
-          <Dialog open={isSignUpOpen} onOpenChange={setIsSignUpOpen}>
-            <DialogTrigger asChild>
-              <button className="text-foreground hover:underline" data-testid="link-create-account">
-                {t("auth.createAccount")}
-              </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("auth.createAccount")}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t("auth.username")}</Label>
-                  <Input placeholder="johndoe" data-testid="input-signup-username" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("common.email")} *</Label>
-                  <Input type="email" placeholder="you@company.com" data-testid="input-signup-email" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("auth.password")} *</Label>
-                  <Input type="password" placeholder="••••••••" data-testid="input-signup-password" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("auth.companyName")} *</Label>
-                  <Input placeholder="ACME Construction" data-testid="input-signup-company" />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    loginAs("workspace");
-                    setIsSignUpOpen(false);
-                    toast({ title: t("auth.accountCreated") });
-                    setLocation("/dashboard");
-                  }}
-                  data-testid="button-signup-submit"
-                >
-                  {t("auth.createAccount")}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Link href="/create-account">
+            <span className="text-foreground hover:underline cursor-pointer" data-testid="link-create-account">
+              {t("auth.createAccount")}
+            </span>
+          </Link>
         </p>
 
         <div className="mt-8 text-center">

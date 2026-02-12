@@ -9,6 +9,7 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
+  fullName: text("full_name"),
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
   role: text("role").notNull().default("workspace_user"),
@@ -18,6 +19,13 @@ export const users = pgTable("users", {
 export const companies = pgTable("companies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  plan: text("plan").notNull().default("trial"),
+  billingStatus: text("billing_status").notNull().default("trial"),
+  trialEndDate: timestamp("trial_end_date"),
+  onboardingCompleted: text("onboarding_completed").notNull().default("false"),
+  country: text("country").default("US"),
+  state: text("state"),
+  phone: text("phone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

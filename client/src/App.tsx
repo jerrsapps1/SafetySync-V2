@@ -10,6 +10,8 @@ import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import AppLayout from "@/components/AppLayout";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
+import CreateAccount from "@/pages/create-account";
+import OnboardingWizard from "@/pages/onboarding";
 import Dashboard from "@/pages/dashboard";
 import Employees from "@/pages/employees";
 import EmployeeProfile from "@/pages/employee-profile";
@@ -52,14 +54,19 @@ function Router() {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
 
-  const publicPaths = ["/", "/login", "/features", "/pricing", "/demo", "/security"];
+  const publicPaths = ["/", "/login", "/create-account", "/features", "/pricing", "/demo", "/security"];
   const isPublicPath = publicPaths.includes(location);
+
+  if (location === "/onboarding" && isAuthenticated) {
+    return <OnboardingWizard />;
+  }
 
   if (isPublicPath) {
     return (
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/login" component={Login} />
+        <Route path="/create-account" component={CreateAccount} />
         <Route path="/features" component={Features} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/demo" component={Demo} />

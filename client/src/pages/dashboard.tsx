@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "@/contexts/I18nContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useOrganization } from "@/contexts/OrganizationContext";
 import { listEmployees, listTrainingRecords, listCertificates } from "@/mock/api";
 import type { MockEmployee, MockTrainingRecord, MockCertificate } from "@/mock/db";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, FileText, Award, AlertTriangle } from "lucide-react";
+import { Users, FileText, Award, AlertTriangle, Clock } from "lucide-react";
 
 const recentActivities = [
   { date: "2026-02-10", description: "New training record added for Carlos Martinez - Fall Protection" },
@@ -17,6 +18,7 @@ const recentActivities = [
 
 export default function Dashboard() {
   const { t } = useI18n();
+  const { trialEndDate } = useAuth();
   const { activeOrg } = useOrganization();
 
   const [employees, setEmployees] = useState<MockEmployee[]>([]);
@@ -91,11 +93,28 @@ export default function Dashboard() {
     },
   ];
 
+  const trialDate = trialEndDate ? new Date(trialEndDate) : null;
+  const trialDaysLeft = trialDate ? Math.max(0, Math.ceil((trialDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+  const formattedTrialDate = trialDate?.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <h1 className="text-2xl font-semibold" data-testid="dashboard-title">
         {t("dashboard.title")}
       </h1>
+
+      {trialDaysLeft !== null && trialDaysLeft >= 0 && (
+        <Card className="border-sky-500/30 bg-sky-500/5" data-testid="trial-banner">
+          <CardContent className="p-4 flex items-center gap-3 flex-wrap">
+            <Clock className="h-4 w-4 text-sky-500 flex-shrink-0" />
+            <span className="text-sm">
+              <Badge variant="secondary" className="mr-2">{t("trial.banner")}</Badge>
+              {t("trial.bannerText")} <span className="font-semibold">{formattedTrialDate}</span>
+              {" — "}{trialDaysLeft} {t("trial.daysLeft")}
+            </span>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (

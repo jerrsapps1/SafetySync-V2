@@ -1,0 +1,75 @@
+GOAL
+Add a better “Create Account” page and an onboarding wizard to the WORKSPACE app. No card required. Starting an account creates an organization + admin user and starts a trial immediately.
+
+HARD RULES
+- Do not refactor unrelated code.
+- Keep current design system/components.
+- Keep dark/light toggle and EN ⇄ Español (México) language toggle working and translate all new UI strings.
+- Do NOT mention HR features or HR managers.
+- Do NOT use the word “tenant”. Use “organization” or “company account”.
+
+WHERE TO BUILD
+- Workspace app only: apps/workspace-web (or your current workspace frontend folder)
+- Backend: server/ only as needed for minimal endpoints
+- Shared types can go in shared/ if you already have it.
+
+FEATURES TO ADD
+
+1) ROUTES / PAGES
+- Add route: /create-account
+- Add route: /onboarding (wizard)
+- Update /login page to include a link/button: “Create account”
+
+2) CREATE ACCOUNT PAGE (UI)
+Form fields:
+- Organization name (required)
+- Admin full name (required)
+- Admin email (required)
+- Password (required)
+- Country (default United States) + State (optional for now)
+- Phone (optional)
+
+Behavior:
+- Submit creates account and immediately signs user in (or stores a “session” like you do now).
+- After success, redirect to /onboarding
+
+Validation:
+- Basic client validation (required fields, email format, min password length)
+
+Copy requirements:
+- Keep language simple. Spanish (Mexico) should be very simple and clear.
+
+3) TRIAL LOGIC (no payment)
+On account creation:
+- trial_end_date = now + 14 days
+- plan = "trial"
+- billing_status = "trial"
+Store these values in the org record (mock DB or real DB depending on what exists).
+
+4) ONBOARDING WIZARD (3 steps, skippable)
+Route: /onboarding
+Step 1: “Add your first employees”
+- simple employee add (name/title) + optional CSV upload placeholder
+- button: Skip
+
+Step 2: “Upload your first training document”
+- links to Documents upload screen OR embed a simple upload panel
+- button: Skip
+
+Step 3: “Finish setup”
+- shows: trial end date + next steps
+- button: “Go to Dashboard”
+
+Wizard requirements:
+- progress indicator (Step 1/2/3)
+- all steps translated (EN + ES-MX)
+- store onboarding_completed = true when finished
+
+DONE CHECK
+- /create-account works end-to-end and routes to /onboarding
+- Trial dates appear somewhere (on onboarding finish + dashboard banner placeholder)
+- New UI strings are fully translated with language toggle
+- No console errors
+OUTPUT
+- List files changed/added
+- How to test: create account -> onboarding -> dashboard

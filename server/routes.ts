@@ -11,6 +11,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.use("/api/admin", adminRoutes);
 
+  app.post("/api/auth/create-account", authRateLimit, async (req, res) => {
+    try {
+      const { organizationName, fullName, email, password, country, state, phone } = req.body;
+
+      if (!organizationName || !fullName || !email || !password) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 14);
+
+      const company = await storage.createCompany({
+        name: organizationName,
+        plan: "trial",
+        billingStatus: "trial",
+        trialEndDate,
+        onboardingCompleted: "false",
+        country: country || "US",
+        state: state || null,
+        phone: phone || null,
+      });
+
+      const username = email.split("@")[0] + "-" + Date.now().toString(36);
+      const user = await storage.createUser({
+        username,
+        fullName,
+        email,
+        password: hashedPassword,
+        role: "owner_admin",
+        companyId: company.id,
+      });
+
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: "owner_admin" as UserRole,
+        orgId: company.id,
+      });
+
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          companyId: user.companyId,
+        },
+        company: {
+          id: company.id,
+          name: company.name,
+          plan: company.plan,
+          billingStatus: company.billingStatus,
+          trialEndDate: company.trialEndDate,
+        },
+      });
+    } catch (error: any) {
+      console.error("Create account error:", error);
+      res.status(500).json({ error: "Account creation failed" });
+    }
+  });
+
+  app.patch("/api/companies/:id/onboarding", requireAuth, async (req, res) => {
+    try {
+      const companyId = (req as any).user.orgId;
+      if (companyId !== req.params.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      const updated = await storage.updateCompany(companyId, { onboardingCompleted: "true" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update onboarding status" });
+    }
+  });
+
   app.post("/api/auth/register", authRateLimit, async (req, res) => {
     try {
       const { username, email, password, companyName } = req.body;

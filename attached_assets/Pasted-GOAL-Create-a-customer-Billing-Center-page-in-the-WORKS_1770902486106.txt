@@ -1,0 +1,88 @@
+GOAL
+Create a customer Billing Center page in the WORKSPACE app and a minimal backend skeleton to support Stripe later. No card required trial. Billing Center must show plan, trial countdown, invoices list (mock), and a “Manage Billing” button (Stripe Portal-ready).
+
+HARD RULES
+- Do not implement real Stripe payments yet unless Stripe is already installed.
+- Keep current design system.
+- Keep theme + language toggles working and translate ALL new UI strings.
+- No HR features. No “tenant” wording.
+
+WHERE TO BUILD
+- Workspace app: apps/workspace-web
+- Backend: server/
+- Admin console: no changes in this section
+
+FEATURES TO ADD
+
+1) ROUTES / NAV
+- Add route: /billing (or /settings/billing if that’s how your nav is structured)
+- Add a “Billing” nav item under Settings (or in main nav if you prefer)
+- Ensure only logged-in workspace users can access Billing
+
+2) BILLING CENTER UI
+Show cards/sections:
+
+A) Current Plan
+- Plan name: Trial / Starter / Pro / Enterprise
+- Status: Trial / Active / Past due / Canceled
+- Trial countdown if in trial:
+  - “X days left in your trial”
+  - trial end date (date formatting)
+- After trial ends behavior (UI only for now):
+  - “Your account will switch to Starter (free) with limits.”
+
+B) Usage (minimal)
+- Employees count
+- Training records count
+- Certificates generated count
+(Keep it minimal; no extra analytics)
+
+C) Upgrade
+- Button: “Upgrade Plan”
+- This routes to a simple /pricing (or opens a modal) with plan selection UI.
+- Clicking a paid plan should call a placeholder function that would later create Stripe Checkout.
+
+D) Invoices (mock)
+- Show a small table: invoice date, amount, status, link button (fake)
+- Use mock data for now.
+
+E) Manage Billing (Stripe Portal-ready)
+- Button: “Manage Billing”
+- When clicked, call backend endpoint:
+  POST /api/billing/portal
+  Body: { returnUrl: window.location.origin + "/billing" }
+- Backend returns { url }
+- Frontend redirects to url
+For now, backend can return a placeholder URL or “not configured” message if STRIPE is missing.
+
+3) BACKEND SKELETON (Render-ready)
+Create endpoints (even if mock):
+
+GET /api/billing/summary
+Returns:
+{
+  plan,
+  billingStatus,
+  trialEndsAt,
+  employeesCount,
+  trainingRecordsCount,
+  certificatesCount,
+  invoices:[...]
+}
+
+POST /api/billing/portal
+- If Stripe env not present: return 501 with a clean message
+- If present later: create Stripe customer portal session
+
+Add env placeholders to server/.env.example:
+- STRIPE_SECRET_KEY=
+- STRIPE_WEBHOOK_SECRET=
+- APP_URL=https://app.safetysync.ai
+
+DONE CHECK
+- Billing page shows correct trial countdown and plan info
+- “Manage Billing” gracefully handles missing Stripe (friendly message)
+- All new strings translate to ES-MX with no leftover English
+OUTPUT
+- List files changed/added
+- How to test: create account -> dashboard banner -> billing page
