@@ -36,6 +36,17 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
+### Frontend Structure (Multi-App)
+
+The frontend is split into two separate apps for independent deployment:
+- **`client/`** - Original client folder (still used by main `npm run dev` workflow via root `vite.config.ts`)
+- **`apps/workspace-web/`** - Customer-facing workspace app (copy of client, has own `vite.config.ts` and `tsconfig.json`)
+- **`apps/admin-console/`** - Admin console app (copy of workspace-web, has own `vite.config.ts` and `tsconfig.json`)
+
+**Running the apps:**
+- `npm run dev` or `npm run dev:workspace` - Runs workspace via Express server on port 5000
+- `npm run dev:admin` - Runs admin console standalone Vite dev server on port 5174 (proxies API to port 5000)
+
 ### Frontend Architecture
 
 **Framework & Build System**
