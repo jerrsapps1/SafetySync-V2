@@ -23,6 +23,19 @@ The application features a marketing landing page with a GitHub-inspired dark th
 - Admin console: /billing/delinquent page for delinquent accounts with portal link and view billing actions
 - Admin sidebar: "Delinquent" nav item under Billing
 
+**Products & Access Control (Feb 2026):**
+- products table: slug, name, description (seeded with SafetySync, OpsSync, JSAsync, DocSync)
+- org_entitlements table: orgId, productId, enabled, plan, billingSource, notes, endsAt, updatedByUserId
+- GET /api/admin/products - list all products
+- GET /api/admin/organizations/:orgId/entitlements - list org entitlements
+- POST /api/admin/organizations/:orgId/entitlements (owner_admin only) - upsert entitlement with audit log
+- Admin console: "Products Purchased" section on org billing detail page with per-product rows
+- Each row: Enabled toggle, Plan dropdown, Billing Source dropdown, End Date, Notes, Save button
+- owner_admin can edit; csr_admin sees read-only view with "Contact owner admin to change access" note
+- Admin sidebar: "Products & Access" nav item
+- Auth context extended: owner_admin vs csr_admin roles with separate mock tokens (mock-admin-token / mock-csr-token)
+- Login page: separate "Sign In as Owner Admin" and "Sign In as CSR Admin" buttons
+
 **Stripe Billing Integration:**
 - Centralized Stripe service: server/stripe.ts (lazy init, checkout, portal, plan catalog)
 - GET /api/billing/plans returns plan catalog from STRIPE_PRICE_PRO/STRIPE_PRICE_ENTERPRISE env vars (fallback to static plans when Stripe not configured)

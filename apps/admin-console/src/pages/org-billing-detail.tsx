@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -14,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ArrowLeft, ExternalLink, Copy, Trash2, Save, Plus } from "lucide-react";
+import { Loader2, ArrowLeft, ExternalLink, Copy, Trash2, Save, Plus, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -53,6 +55,36 @@ interface BillingNote {
   note: string;
   authorUserId: string;
   createdAt: string;
+}
+
+interface Product {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+}
+
+interface Entitlement {
+  id: string;
+  orgId: string;
+  productId: string;
+  enabled: boolean;
+  plan: string;
+  billingSource: string;
+  notes: string | null;
+  endsAt: string | null;
+  updatedByUserId: string | null;
+  updatedAt: string;
+}
+
+interface EntitlementRowState {
+  productId: string;
+  enabled: boolean;
+  plan: string;
+  billingSource: string;
+  notes: string;
+  endsAt: string;
+  dirty: boolean;
 }
 
 const planLabels: Record<string, string> = {
@@ -108,10 +140,31 @@ const overrideTypeLabels: Record<string, string> = {
   none: "None",
 };
 
+function buildRowStates(allProducts: Product[], entitlements: Entitlement[]): EntitlementRowState[] {
+  const entMap = new Map<string, Entitlement>();
+  for (const e of entitlements) {
+    entMap.set(e.productId, e);
+  }
+
+  return allProducts.map((p) => {
+    const ent = entMap.get(p.id);
+    return {
+      productId: p.id,
+      enabled: ent?.enabled ?? false,
+      plan: ent?.plan ?? "trial",
+      billingSource: ent?.billingSource ?? "stripe",
+      notes: ent?.notes ?? "",
+      endsAt: ent?.endsAt ? ent.endsAt.split("T")[0] : "",
+      dirty: false,
+    };
+  });
+}
+
 export default function OrgBillingDetail() {
   const [, params] = useRoute("/billing/:orgId");
   const orgId = params?.orgId;
   const { toast } = useToast();
+  const { isOwnerAdmin } = useAuth();
 
   const { data: billing, isLoading, error } = useQuery<OrgBillingDetail>({
     queryKey: ["/api/admin/organizations", orgId, "billing"],
@@ -123,12 +176,34 @@ export default function OrgBillingDetail() {
     enabled: !!orgId,
   });
 
+  const { data: allProducts } = useQuery<Product[]>({
+    queryKey: ["/api/admin/products"],
+  });
+
+  const { data: entitlements } = useQuery<Entitlement[]>({
+    queryKey: ["/api/admin/organizations", orgId, "entitlements"],
+    enabled: !!orgId,
+  });
+
   const [overrideType, setOverrideType] = useState("comped");
   const [discountPercent, setDiscountPercent] = useState("");
   const [fixedPriceCents, setFixedPriceCents] = useState("");
   const [overrideNote, setOverrideNote] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [rowStates, setRowStates] = useState<EntitlementRowState[] | null>(null);
+  const [savingProductId, setSavingProductId] = useState<string | null>(null);
+
+  const mergedRows = rowStates ?? (allProducts && entitlements ? buildRowStates(allProducts, entitlements) : null);
+
+  const updateRow = (productId: string, updates: Partial<EntitlementRowState>) => {
+    const base = mergedRows ?? [];
+    setRowStates(
+      base.map((r) =>
+        r.productId === productId ? { ...r, ...updates, dirty: true } : r,
+      ),
+    );
+  };
 
   const createOverrideMutation = useMutation({
     mutationFn: async () => {
@@ -197,6 +272,32 @@ export default function OrgBillingDetail() {
       toast({ title: "Portal link copied to clipboard" });
     },
     onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const saveEntitlementMutation = useMutation({
+    mutationFn: async (row: EntitlementRowState) => {
+      setSavingProductId(row.productId);
+      await apiRequest("POST", `/api/admin/organizations/${orgId}/entitlements`, {
+        productId: row.productId,
+        enabled: row.enabled,
+        plan: row.plan,
+        billingSource: row.billingSource,
+        notes: row.notes || null,
+        endsAt: row.endsAt || null,
+      });
+    },
+    onSuccess: (_data, row) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/organizations", orgId, "entitlements"] });
+      setRowStates((prev) =>
+        prev?.map((r) => (r.productId === row.productId ? { ...r, dirty: false } : r)) ?? null,
+      );
+      setSavingProductId(null);
+      toast({ title: "Entitlement saved" });
+    },
+    onError: (err: Error) => {
+      setSavingProductId(null);
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
@@ -310,6 +411,182 @@ export default function OrgBillingDetail() {
         </Card>
       )}
 
+      <Card data-testid="card-products-purchased">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Products Purchased</CardTitle>
+          {!isOwnerAdmin && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5" />
+              <span>Contact owner admin to change access</span>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="table-entitlements">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Product</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Enabled</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Plan</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Billing Source</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Ends At</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Notes</th>
+                  {isOwnerAdmin && (
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Action</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {mergedRows?.map((row) => {
+                  const product = allProducts?.find((p) => p.id === row.productId);
+                  if (!product) return null;
+                  const isSaving = savingProductId === row.productId;
+
+                  return (
+                    <tr
+                      key={row.productId}
+                      className="border-b last:border-b-0"
+                      data-testid={`row-entitlement-${product.slug}`}
+                    >
+                      <td className="px-4 py-3">
+                        <div>
+                          <span className="font-medium" data-testid={`text-entitlement-product-${product.slug}`}>
+                            {product.name}
+                          </span>
+                          <p className="text-xs text-muted-foreground">{product.description}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Switch
+                          checked={row.enabled}
+                          onCheckedChange={(checked) =>
+                            updateRow(row.productId, { enabled: checked })
+                          }
+                          disabled={!isOwnerAdmin}
+                          data-testid={`switch-enabled-${product.slug}`}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        {isOwnerAdmin ? (
+                          <Select
+                            value={row.plan}
+                            onValueChange={(val) => updateRow(row.productId, { plan: val })}
+                          >
+                            <SelectTrigger
+                              className="w-[120px]"
+                              data-testid={`select-plan-${product.slug}`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="trial">Trial</SelectItem>
+                              <SelectItem value="starter">Starter</SelectItem>
+                              <SelectItem value="pro">Pro</SelectItem>
+                              <SelectItem value="enterprise">Enterprise</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="secondary" data-testid={`badge-plan-${product.slug}`}>
+                            {planLabels[row.plan] || row.plan}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isOwnerAdmin ? (
+                          <Select
+                            value={row.billingSource}
+                            onValueChange={(val) =>
+                              updateRow(row.productId, { billingSource: val })
+                            }
+                          >
+                            <SelectTrigger
+                              className="w-[120px]"
+                              data-testid={`select-billing-source-${product.slug}`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="stripe">Stripe</SelectItem>
+                              <SelectItem value="manual">Manual</SelectItem>
+                              <SelectItem value="promo">Promo</SelectItem>
+                              <SelectItem value="comped">Comped</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-sm" data-testid={`text-billing-source-${product.slug}`}>
+                            {row.billingSource}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isOwnerAdmin ? (
+                          <Input
+                            type="date"
+                            value={row.endsAt}
+                            onChange={(e) =>
+                              updateRow(row.productId, { endsAt: e.target.value })
+                            }
+                            className="w-[140px]"
+                            data-testid={`input-ends-at-${product.slug}`}
+                          />
+                        ) : (
+                          <span className="text-sm" data-testid={`text-ends-at-${product.slug}`}>
+                            {row.endsAt ? formatDate(row.endsAt) : "\u2014"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isOwnerAdmin ? (
+                          <Input
+                            value={row.notes}
+                            onChange={(e) =>
+                              updateRow(row.productId, { notes: e.target.value })
+                            }
+                            placeholder="Notes..."
+                            className="w-[140px]"
+                            data-testid={`input-notes-${product.slug}`}
+                          />
+                        ) : (
+                          <span className="text-sm text-muted-foreground" data-testid={`text-notes-${product.slug}`}>
+                            {row.notes || "\u2014"}
+                          </span>
+                        )}
+                      </td>
+                      {isOwnerAdmin && (
+                        <td className="px-4 py-3">
+                          <Button
+                            size="sm"
+                            variant={row.dirty ? "default" : "outline"}
+                            onClick={() => saveEntitlementMutation.mutate(row)}
+                            disabled={!row.dirty || isSaving}
+                            data-testid={`button-save-entitlement-${product.slug}`}
+                          >
+                            {isSaving ? (
+                              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                            ) : (
+                              <Save className="h-3.5 w-3.5 mr-1" />
+                            )}
+                            Save
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+                {(!mergedRows || mergedRows.length === 0) && (
+                  <tr>
+                    <td colSpan={isOwnerAdmin ? 7 : 6} className="px-4 py-8 text-center text-muted-foreground">
+                      No products available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card data-testid="card-billing-override">
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="text-sm font-medium text-muted-foreground">Billing Override</CardTitle>
@@ -360,108 +637,114 @@ export default function OrgBillingDetail() {
                   </div>
                 )}
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => deleteOverrideMutation.mutate()}
-                disabled={deleteOverrideMutation.isPending}
-                data-testid="button-remove-override"
-              >
-                {deleteOverrideMutation.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                )}
-                Remove Override
-              </Button>
+              {isOwnerAdmin && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteOverrideMutation.mutate()}
+                  disabled={deleteOverrideMutation.isPending}
+                  data-testid="button-remove-override"
+                >
+                  {deleteOverrideMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  )}
+                  Remove Override
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground" data-testid="text-no-override">
                 No billing override applied
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="overrideType">Override Type</Label>
-                  <Select value={overrideType} onValueChange={setOverrideType}>
-                    <SelectTrigger data-testid="select-override-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="comped">Comped (Free)</SelectItem>
-                      <SelectItem value="discount_percent">Discount %</SelectItem>
-                      <SelectItem value="fixed_price">Fixed Price</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {isOwnerAdmin && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="overrideType">Override Type</Label>
+                      <Select value={overrideType} onValueChange={setOverrideType}>
+                        <SelectTrigger data-testid="select-override-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="comped">Comped (Free)</SelectItem>
+                          <SelectItem value="discount_percent">Discount %</SelectItem>
+                          <SelectItem value="fixed_price">Fixed Price</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {overrideType === "discount_percent" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="discountPercent">Discount Percent</Label>
-                    <Input
-                      id="discountPercent"
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={discountPercent}
-                      onChange={(e) => setDiscountPercent(e.target.value)}
-                      placeholder="e.g. 25"
-                      data-testid="input-discount-percent"
-                    />
+                    {overrideType === "discount_percent" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="discountPercent">Discount Percent</Label>
+                        <Input
+                          id="discountPercent"
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={discountPercent}
+                          onChange={(e) => setDiscountPercent(e.target.value)}
+                          placeholder="e.g. 25"
+                          data-testid="input-discount-percent"
+                        />
+                      </div>
+                    )}
+
+                    {overrideType === "fixed_price" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="fixedPriceCents">Fixed Price (cents)</Label>
+                        <Input
+                          id="fixedPriceCents"
+                          type="number"
+                          min={0}
+                          value={fixedPriceCents}
+                          onChange={(e) => setFixedPriceCents(e.target.value)}
+                          placeholder="e.g. 4999 for $49.99"
+                          data-testid="input-fixed-price"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="endsAt">End Date (optional)</Label>
+                      <Input
+                        id="endsAt"
+                        type="date"
+                        value={endsAt}
+                        onChange={(e) => setEndsAt(e.target.value)}
+                        data-testid="input-override-ends-at"
+                      />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="overrideNote">Note (required)</Label>
+                      <Textarea
+                        id="overrideNote"
+                        value={overrideNote}
+                        onChange={(e) => setOverrideNote(e.target.value)}
+                        placeholder="Reason for this override..."
+                        className="resize-none"
+                        data-testid="input-override-note"
+                      />
+                    </div>
                   </div>
-                )}
-
-                {overrideType === "fixed_price" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="fixedPriceCents">Fixed Price (cents)</Label>
-                    <Input
-                      id="fixedPriceCents"
-                      type="number"
-                      min={0}
-                      value={fixedPriceCents}
-                      onChange={(e) => setFixedPriceCents(e.target.value)}
-                      placeholder="e.g. 4999 for $49.99"
-                      data-testid="input-fixed-price"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="endsAt">End Date (optional)</Label>
-                  <Input
-                    id="endsAt"
-                    type="date"
-                    value={endsAt}
-                    onChange={(e) => setEndsAt(e.target.value)}
-                    data-testid="input-override-ends-at"
-                  />
-                </div>
-
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="overrideNote">Note (required)</Label>
-                  <Textarea
-                    id="overrideNote"
-                    value={overrideNote}
-                    onChange={(e) => setOverrideNote(e.target.value)}
-                    placeholder="Reason for this override..."
-                    className="resize-none"
-                    data-testid="input-override-note"
-                  />
-                </div>
-              </div>
-              <Button
-                size="sm"
-                onClick={() => createOverrideMutation.mutate()}
-                disabled={createOverrideMutation.isPending || !overrideNote.trim()}
-                data-testid="button-save-override"
-              >
-                {createOverrideMutation.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                ) : (
-                  <Save className="h-3.5 w-3.5 mr-1" />
-                )}
-                Save Override
-              </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => createOverrideMutation.mutate()}
+                    disabled={createOverrideMutation.isPending || !overrideNote.trim()}
+                    data-testid="button-save-override"
+                  >
+                    {createOverrideMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Save Override
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </CardContent>

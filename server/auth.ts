@@ -67,6 +67,15 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
         };
         return next();
       }
+      if (token === "mock-csr-token") {
+        (req as any).user = {
+          id: "csr-1",
+          email: "csr@syncai.com",
+          role: "csr_admin",
+          orgId: null,
+        };
+        return next();
+      }
     }
 
     const payload = verifyToken(token);

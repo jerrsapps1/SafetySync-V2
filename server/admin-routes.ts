@@ -3,7 +3,7 @@ import { requireAuth, requireRole } from "./auth";
 import { adminRateLimit } from "./rate-limit";
 import { auditFromReq, getAuditLogs } from "./audit";
 import { db } from "./db";
-import { users, companies, OVERRIDE_TYPES } from "@shared/schema";
+import { users, companies, OVERRIDE_TYPES, ENTITLEMENT_PLANS, BILLING_SOURCES } from "@shared/schema";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { isStripeConfigured, getSubscriptionStatus, listCustomerInvoices, createPortalSession } from "./stripe";
@@ -367,5 +367,89 @@ router.post("/organizations/:orgId/billing-notes", async (req, res) => {
     res.status(500).json({ error: "Failed to create billing note" });
   }
 });
+
+router.get("/products", async (_req, res) => {
+  try {
+    const allProducts = await storage.getAllProducts();
+    res.json(allProducts);
+  } catch (err) {
+    console.error("Get products error:", err);
+    res.status(500).json({ error: "Failed to load products" });
+  }
+});
+
+router.get("/organizations/:orgId/entitlements", async (req, res) => {
+  try {
+    const { orgId } = req.params;
+    const company = await storage.getCompany(orgId);
+    if (!company) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const entitlements = await storage.getOrgEntitlements(orgId);
+    res.json(entitlements);
+  } catch (err) {
+    console.error("Get org entitlements error:", err);
+    res.status(500).json({ error: "Failed to load entitlements" });
+  }
+});
+
+const entitlementBodySchema = z.object({
+  productId: z.string().min(1),
+  enabled: z.boolean(),
+  plan: z.enum(ENTITLEMENT_PLANS),
+  billingSource: z.enum(BILLING_SOURCES),
+  notes: z.string().optional().nullable(),
+  endsAt: z.string().optional().nullable(),
+});
+
+router.post(
+  "/organizations/:orgId/entitlements",
+  requireRole(["owner_admin"]),
+  async (req, res) => {
+    try {
+      const { orgId } = req.params;
+      const company = await storage.getCompany(orgId);
+      if (!company) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+
+      const parsed = entitlementBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors });
+      }
+
+      const { productId, enabled, plan, billingSource, notes, endsAt } = parsed.data;
+      const user = (req as any).user;
+
+      const product = await storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const entitlement = await storage.upsertOrgEntitlement({
+        orgId,
+        productId,
+        enabled,
+        plan,
+        billingSource,
+        notes: notes || null,
+        endsAt: endsAt ? new Date(endsAt) : null,
+        updatedByUserId: user.id,
+      });
+
+      auditFromReq(req, "entitlement.update", {
+        targetType: "organization",
+        targetId: orgId,
+        metadata: { productId, productName: product.name, enabled, plan, billingSource },
+      });
+
+      res.json(entitlement);
+    } catch (err) {
+      console.error("Update org entitlement error:", err);
+      res.status(500).json({ error: "Failed to update entitlement" });
+    }
+  },
+);
 
 export default router;

@@ -30,12 +30,14 @@ import {
   Languages,
   LogOut,
   AlertTriangle,
+  Package,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 const adminNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Organizations", href: "/organizations", icon: Building2 },
+  { label: "Products & Access", href: "/products", icon: Package },
   { label: "Support", href: "/support", icon: Headphones },
   { label: "Billing", href: "/billing", icon: CreditCard },
   { label: "Delinquent", href: "/billing/delinquent", icon: AlertTriangle },

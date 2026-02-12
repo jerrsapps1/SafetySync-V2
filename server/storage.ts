@@ -7,6 +7,8 @@ import {
   trainingRecords,
   orgBillingOverrides,
   billingNotes,
+  products,
+  orgEntitlements,
   type User,
   type InsertUser,
   type Company,
@@ -21,6 +23,10 @@ import {
   type InsertBillingOverride,
   type BillingNote,
   type InsertBillingNote,
+  type Product,
+  type InsertProduct,
+  type OrgEntitlement,
+  type InsertOrgEntitlement,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, inArray } from "drizzle-orm";
 
@@ -62,6 +68,12 @@ export interface IStorage {
   createBillingNote(data: InsertBillingNote): Promise<BillingNote>;
 
   getDelinquentCompanies(): Promise<Company[]>;
+
+  getAllProducts(): Promise<Product[]>;
+  getProduct(id: string): Promise<Product | undefined>;
+  createProduct(data: InsertProduct): Promise<Product>;
+  getOrgEntitlements(orgId: string): Promise<OrgEntitlement[]>;
+  upsertOrgEntitlement(data: InsertOrgEntitlement): Promise<OrgEntitlement>;
 }
 
 export class DbStorage implements IStorage {
@@ -262,6 +274,60 @@ export class DbStorage implements IStorage {
       .select()
       .from(companies)
       .where(inArray(companies.billingStatus, ["past_due", "unpaid", "canceled"]));
+  }
+
+  async getAllProducts(): Promise<Product[]> {
+    return db.select().from(products).orderBy(products.name);
+  }
+
+  async getProduct(id: string): Promise<Product | undefined> {
+    const result = await db.select().from(products).where(eq(products.id, id));
+    return result[0];
+  }
+
+  async createProduct(data: InsertProduct): Promise<Product> {
+    const result = await db.insert(products).values(data).returning();
+    return result[0];
+  }
+
+  async getOrgEntitlements(orgId: string): Promise<OrgEntitlement[]> {
+    return db
+      .select()
+      .from(orgEntitlements)
+      .where(eq(orgEntitlements.orgId, orgId))
+      .orderBy(orgEntitlements.updatedAt);
+  }
+
+  async upsertOrgEntitlement(data: InsertOrgEntitlement): Promise<OrgEntitlement> {
+    const existing = await db
+      .select()
+      .from(orgEntitlements)
+      .where(
+        and(
+          eq(orgEntitlements.orgId, data.orgId),
+          eq(orgEntitlements.productId, data.productId),
+        ),
+      );
+
+    if (existing.length > 0) {
+      const result = await db
+        .update(orgEntitlements)
+        .set({
+          enabled: data.enabled,
+          plan: data.plan,
+          billingSource: data.billingSource,
+          notes: data.notes,
+          endsAt: data.endsAt,
+          updatedByUserId: data.updatedByUserId,
+          updatedAt: new Date(),
+        })
+        .where(eq(orgEntitlements.id, existing[0].id))
+        .returning();
+      return result[0];
+    }
+
+    const result = await db.insert(orgEntitlements).values(data).returning();
+    return result[0];
   }
 }
 

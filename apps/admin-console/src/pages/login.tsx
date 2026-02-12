@@ -19,8 +19,8 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleAdminLogin = () => {
-    loginAs("admin");
+  const handleLogin = (role: "owner_admin" | "csr_admin") => {
+    loginAs(role);
     toast({ title: t("auth.loginSuccess"), description: t("auth.welcomeBack") });
     setLocation("/dashboard");
   };
@@ -71,10 +71,18 @@ export default function Login() {
             </div>
             <Button
               className="w-full"
-              onClick={handleAdminLogin}
+              onClick={() => handleLogin("owner_admin")}
               data-testid="button-admin-login"
             >
-              Sign In
+              Sign In as Owner Admin
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => handleLogin("csr_admin")}
+              data-testid="button-csr-login"
+            >
+              Sign In as CSR Admin
             </Button>
           </div>
         </GlassCard>
