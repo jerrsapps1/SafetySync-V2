@@ -20,6 +20,7 @@ import Certificates from "@/pages/certificates";
 import WalletCards from "@/pages/wallet-cards";
 import Compliance from "@/pages/compliance";
 import SettingsPage from "@/pages/settings";
+import BillingPage from "@/pages/billing";
 import Features from "@/pages/features";
 import Pricing from "@/pages/pricing";
 import Demo from "@/pages/demo";
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="/certificates" component={Certificates} />
         <Route path="/wallet-cards" component={WalletCards} />
         <Route path="/compliance" component={Compliance} />
+        <Route path="/billing" component={BillingPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route component={NotFound} />
       </Switch>

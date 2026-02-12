@@ -31,6 +31,7 @@ import {
   Award,
   CreditCard,
   ShieldCheck,
+  Receipt,
   Settings,
   Sun,
   Moon,
@@ -48,6 +49,7 @@ const workspaceNavItems = [
   { key: "nav.certificates", href: "/certificates", icon: Award },
   { key: "nav.walletCards", href: "/wallet-cards", icon: CreditCard },
   { key: "nav.compliance", href: "/compliance", icon: ShieldCheck },
+  { key: "nav.billing", href: "/billing", icon: Receipt },
   { key: "nav.settings", href: "/settings", icon: Settings },
 ];
 

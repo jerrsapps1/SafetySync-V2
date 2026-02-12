@@ -438,6 +438,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/billing/summary", requireAuth, async (req, res) => {
+    try {
+      const companyId = (req as any).user.orgId;
+      if (!companyId) {
+        return res.status(403).json({ error: "No company associated with user" });
+      }
+
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      const employeesList = await storage.getEmployees(companyId);
+      const records = await storage.getTrainingRecordsByCompany(companyId);
+
+      const mockInvoices = company.billingStatus !== "trial" ? [
+        { id: "inv-001", date: "2026-01-15", amount: "$49.00", status: "paid" },
+        { id: "inv-002", date: "2025-12-15", amount: "$49.00", status: "paid" },
+      ] : [];
+
+      res.json({
+        plan: company.plan || "trial",
+        billingStatus: company.billingStatus || "trial",
+        trialEndsAt: company.trialEndDate,
+        employeesCount: employeesList.length,
+        trainingRecordsCount: records.length,
+        certificatesCount: 0,
+        invoices: mockInvoices,
+      });
+    } catch (error: any) {
+      console.error("Billing summary error:", error);
+      res.status(500).json({ error: "Failed to get billing summary" });
+    }
+  });
+
+  app.post("/api/billing/portal", requireAuth, async (req, res) => {
+    try {
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        return res.status(501).json({
+          error: "Billing portal is not configured. Stripe integration is not yet set up.",
+        });
+      }
+
+      const { returnUrl } = req.body;
+      res.json({ url: returnUrl || "/" });
+    } catch (error: any) {
+      console.error("Billing portal error:", error);
+      res.status(500).json({ error: "Failed to create billing portal session" });
+    }
+  });
+
   if (process.env.NODE_ENV === "development") {
     app.post("/api/dev/seed", async (req, res) => {
       try {
