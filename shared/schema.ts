@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, date, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, date, jsonb, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -97,6 +97,33 @@ export const billingNotes = pgTable("billing_notes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const ENTITLEMENT_PLANS = ["trial", "starter", "pro", "enterprise"] as const;
+export type EntitlementPlan = (typeof ENTITLEMENT_PLANS)[number];
+
+export const BILLING_SOURCES = ["stripe", "manual", "promo", "comped"] as const;
+export type BillingSource = (typeof BILLING_SOURCES)[number];
+
+export const products = pgTable("products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const orgEntitlements = pgTable("org_entitlements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orgId: varchar("org_id").notNull().references(() => companies.id),
+  productId: varchar("product_id").notNull().references(() => products.id),
+  enabled: boolean("enabled").notNull().default(false),
+  plan: text("plan").notNull().default("trial"),
+  billingSource: text("billing_source").notNull().default("stripe"),
+  notes: text("notes"),
+  endsAt: timestamp("ends_at"),
+  updatedByUserId: varchar("updated_by_user_id"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
 export const insertLocationSchema = createInsertSchema(locations).omit({ id: true });
@@ -105,6 +132,8 @@ export const insertTrainingRecordSchema = createInsertSchema(trainingRecords).om
 export const insertAuditLogSchema = createInsertSchema(adminAuditLogs).omit({ id: true, createdAt: true });
 export const insertBillingOverrideSchema = createInsertSchema(orgBillingOverrides).omit({ id: true, createdAt: true });
 export const insertBillingNoteSchema = createInsertSchema(billingNotes).omit({ id: true, createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
+export const insertOrgEntitlementSchema = createInsertSchema(orgEntitlements).omit({ id: true, updatedAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -122,3 +151,7 @@ export type InsertBillingOverride = z.infer<typeof insertBillingOverrideSchema>;
 export type OrgBillingOverride = typeof orgBillingOverrides.$inferSelect;
 export type InsertBillingNote = z.infer<typeof insertBillingNoteSchema>;
 export type BillingNote = typeof billingNotes.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type Product = typeof products.$inferSelect;
+export type InsertOrgEntitlement = z.infer<typeof insertOrgEntitlementSchema>;
+export type OrgEntitlement = typeof orgEntitlements.$inferSelect;
