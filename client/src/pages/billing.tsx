@@ -162,6 +162,13 @@ export default function BillingPage() {
   });
 
   const handleManageBilling = async () => {
+    if (isMockAuth) {
+      toast({
+        title: t("billing.manageBilling"),
+        description: t("billing.demoModeNotice"),
+      });
+      return;
+    }
     setPortalLoading(true);
     try {
       const res = await apiRequest("POST", "/api/billing/portal", {
@@ -184,6 +191,13 @@ export default function BillingPage() {
   };
 
   const handleUpgrade = async (planKey: string) => {
+    if (isMockAuth) {
+      toast({
+        title: t("billing.upgrade"),
+        description: t("billing.demoModeNotice"),
+      });
+      return;
+    }
     setCheckoutLoading(planKey);
     try {
       const res = await apiRequest("POST", "/api/billing/checkout", {

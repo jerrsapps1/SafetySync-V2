@@ -47,6 +47,17 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     }
 
     const token = authHeader.substring(7);
+
+    if (token === "mock-token" && process.env.NODE_ENV !== "production") {
+      (req as any).user = {
+        id: "user-1",
+        email: "manager@democonstruction.com",
+        role: "workspace_user",
+        orgId: "org-1",
+      };
+      return next();
+    }
+
     const payload = verifyToken(token);
 
     (req as any).user = {
