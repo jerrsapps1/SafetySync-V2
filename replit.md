@@ -8,10 +8,18 @@ The application features a marketing landing page with a GitHub-inspired dark th
 
 ## Recent Updates (February 2026)
 
-**Billing Center:**
-- Added /billing page with Current Plan, Usage, Upgrade Plan, Invoices, and Manage Billing sections
-- Backend: GET /api/billing/summary (auth-protected) returns plan, status, trial info, usage counts, invoices
-- Backend: POST /api/billing/portal returns 501 when Stripe not configured (Stripe-ready skeleton)
+**Stripe Billing Integration:**
+- Centralized Stripe service: server/stripe.ts (lazy init, checkout, portal, plan catalog)
+- GET /api/billing/plans returns plan catalog from STRIPE_PRICE_PRO/STRIPE_PRICE_ENTERPRISE env vars (fallback to static plans when Stripe not configured)
+- POST /api/billing/checkout creates Stripe Checkout session for plan upgrades
+- POST /api/billing/portal creates Stripe Customer Portal session
+- GET /api/billing/summary returns plan, status, trial info, usage counts, invoices
+- stripeCustomerId column on companies table for Stripe customer persistence
+- No hardcoded prices in frontend - plans fetched from API, prices shown in Stripe Checkout
+- Env vars: STRIPE_SECRET_KEY, STRIPE_PRICE_PRO, STRIPE_PRICE_ENTERPRISE, APP_URL (optional)
+
+**Billing Center UI:**
+- /billing page with Current Plan, Usage, Upgrade Plan (dynamic from API), Invoices, and Manage Billing
 - Mock auth gracefully handled: billing page shows demo data when using mock login
 - Full i18n support (EN + ES-MX)
 - Navigation: Billing nav item added to sidebar between Compliance and Settings

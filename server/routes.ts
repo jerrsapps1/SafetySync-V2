@@ -6,6 +6,7 @@ import { insertUserSchema, insertCompanySchema, insertLocationSchema, insertEmpl
 import { authRateLimit } from "./rate-limit";
 import adminRoutes from "./admin-routes";
 import type { UserRole } from "@shared/schema";
+import { isStripeConfigured, getPlansFromEnv, getOrCreateStripeCustomer, createCheckoutSession, createPortalSession } from "./stripe";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -473,19 +474,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const fallbackPlans = [
+    {
+      planKey: "pro",
+      name: "Pro",
+      priceId: "",
+      interval: "month",
+      currency: "usd",
+      displayPrice: "",
+      features: [
+        "Up to 100 employees",
+        "Unlimited training records",
+        "Compliance dashboard",
+        "Priority support",
+      ],
+    },
+    {
+      planKey: "enterprise",
+      name: "Enterprise",
+      priceId: "",
+      interval: "month",
+      currency: "usd",
+      displayPrice: "",
+      features: [
+        "Unlimited employees",
+        "Unlimited training records",
+        "Advanced analytics",
+        "Dedicated support",
+        "Custom integrations",
+      ],
+    },
+  ];
+
+  app.get("/api/billing/plans", requireAuth, async (req, res) => {
+    try {
+      if (!isStripeConfigured()) {
+        return res.json(fallbackPlans);
+      }
+
+      const plans = getPlansFromEnv();
+      res.json(plans.length > 0 ? plans : fallbackPlans);
+    } catch (error: any) {
+      console.error("Billing plans error:", error);
+      res.status(500).json({ error: "Failed to get billing plans" });
+    }
+  });
+
+  app.post("/api/billing/checkout", requireAuth, async (req, res) => {
+    try {
+      if (!isStripeConfigured()) {
+        return res.status(501).json({
+          error: "Stripe is not configured. Please contact support.",
+        });
+      }
+
+      const { planKey, successUrl, cancelUrl } = req.body;
+      if (!planKey || !successUrl || !cancelUrl) {
+        return res.status(400).json({ error: "Missing planKey, successUrl, or cancelUrl" });
+      }
+
+      const plans = getPlansFromEnv();
+      const plan = plans.find((p) => p.planKey === planKey);
+      if (!plan) {
+        return res.status(400).json({ error: `Unknown plan: ${planKey}` });
+      }
+
+      const companyId = (req as any).user.orgId;
+      const userEmail = (req as any).user.email;
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      const customerId = await getOrCreateStripeCustomer(
+        companyId,
+        company.stripeCustomerId,
+        company.name,
+        userEmail,
+      );
+
+      if (!company.stripeCustomerId) {
+        await storage.updateCompany(companyId, { stripeCustomerId: customerId });
+      }
+
+      const baseUrl = process.env.APP_URL || req.headers.origin || `${req.protocol}://${req.headers.host}`;
+      const fullSuccessUrl = successUrl.startsWith("http") ? successUrl : `${baseUrl}${successUrl}`;
+      const fullCancelUrl = cancelUrl.startsWith("http") ? cancelUrl : `${baseUrl}${cancelUrl}`;
+
+      const url = await createCheckoutSession(customerId, plan.priceId, fullSuccessUrl, fullCancelUrl);
+      res.json({ url });
+    } catch (error: any) {
+      console.error("Billing checkout error:", error);
+      if (error.message === "STRIPE_NOT_CONFIGURED") {
+        return res.status(501).json({ error: "Stripe is not configured." });
+      }
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
   app.post("/api/billing/portal", requireAuth, async (req, res) => {
     try {
-      const stripeKey = process.env.STRIPE_SECRET_KEY;
-      if (!stripeKey) {
+      if (!isStripeConfigured()) {
         return res.status(501).json({
           error: "Billing portal is not configured. Stripe integration is not yet set up.",
         });
       }
 
+      const companyId = (req as any).user.orgId;
+      const userEmail = (req as any).user.email;
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      const customerId = await getOrCreateStripeCustomer(
+        companyId,
+        company.stripeCustomerId,
+        company.name,
+        userEmail,
+      );
+
+      if (!company.stripeCustomerId) {
+        await storage.updateCompany(companyId, { stripeCustomerId: customerId });
+      }
+
       const { returnUrl } = req.body;
-      res.json({ url: returnUrl || "/" });
+      const baseUrl = process.env.APP_URL || req.headers.origin || `${req.protocol}://${req.headers.host}`;
+      const fullReturnUrl = returnUrl?.startsWith("http") ? returnUrl : `${baseUrl}${returnUrl || "/billing"}`;
+
+      const url = await createPortalSession(customerId, fullReturnUrl);
+      res.json({ url });
     } catch (error: any) {
       console.error("Billing portal error:", error);
+      if (error.message === "STRIPE_NOT_CONFIGURED") {
+        return res.status(501).json({ error: "Stripe is not configured." });
+      }
       res.status(500).json({ error: "Failed to create billing portal session" });
     }
   });

@@ -30,6 +30,16 @@ interface BillingSummary {
   invoices: { id: string; date: string; amount: string; status: string }[];
 }
 
+interface PlanInfo {
+  planKey: string;
+  name: string;
+  priceId: string;
+  interval: string;
+  currency: string;
+  displayPrice: string;
+  features: string[];
+}
+
 const planLabels: Record<string, string> = {
   trial: "billing.planTrial",
   starter: "billing.planStarter",
@@ -62,6 +72,7 @@ export default function BillingPage() {
   const { token } = useAuth();
   const { toast } = useToast();
   const [portalLoading, setPortalLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   const isMockAuth = token === "mock-token";
 
@@ -75,12 +86,50 @@ export default function BillingPage() {
     invoices: [],
   };
 
+  const mockPlans: PlanInfo[] = [
+    {
+      planKey: "pro",
+      name: "Pro",
+      priceId: "",
+      interval: "month",
+      currency: "usd",
+      displayPrice: "",
+      features: [
+        "Up to 100 employees",
+        "Unlimited training records",
+        "Compliance dashboard",
+        "Priority support",
+      ],
+    },
+    {
+      planKey: "enterprise",
+      name: "Enterprise",
+      priceId: "",
+      interval: "month",
+      currency: "usd",
+      displayPrice: "",
+      features: [
+        "Unlimited employees",
+        "Unlimited training records",
+        "Advanced analytics",
+        "Dedicated support",
+        "Custom integrations",
+      ],
+    },
+  ];
+
   const { data: apiBilling, isLoading, error } = useQuery<BillingSummary>({
     queryKey: ["/api/billing/summary"],
     enabled: !!token && !isMockAuth,
   });
 
+  const { data: apiPlans } = useQuery<PlanInfo[]>({
+    queryKey: ["/api/billing/plans"],
+    enabled: !!token && !isMockAuth,
+  });
+
   const billing = isMockAuth ? mockBilling : apiBilling;
+  const plans = isMockAuth ? mockPlans : (apiPlans || []);
 
   const trialDate = billing?.trialEndsAt ? new Date(billing.trialEndsAt) : null;
   const trialDaysLeft = trialDate
@@ -114,11 +163,28 @@ export default function BillingPage() {
     }
   };
 
-  const handleSelectPlan = (plan: string) => {
-    toast({
-      title: t("billing.upgrade"),
-      description: t("billing.stripeNotConfigured"),
-    });
+  const handleUpgrade = async (planKey: string) => {
+    setCheckoutLoading(planKey);
+    try {
+      const res = await apiRequest("POST", "/api/billing/checkout", {
+        planKey,
+        successUrl: "/billing?upgraded=1",
+        cancelUrl: "/billing",
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      const is501 = err?.message?.startsWith("501");
+      toast({
+        title: t("billing.upgrade"),
+        description: is501 ? t("billing.stripeNotConfigured") : t("billing.checkoutError"),
+        variant: is501 ? undefined : "destructive",
+      });
+    } finally {
+      setCheckoutLoading(null);
+    }
   };
 
   if (isLoading) {
@@ -136,30 +202,6 @@ export default function BillingPage() {
       </div>
     );
   }
-
-  const plans = [
-    {
-      key: "starter",
-      name: t("billing.planStarter"),
-      price: t("billing.starterPrice"),
-      desc: t("billing.starterDesc"),
-      limit: t("billing.upTo25Emp"),
-    },
-    {
-      key: "pro",
-      name: t("billing.planPro"),
-      price: t("billing.proPrice"),
-      desc: t("billing.proDesc"),
-      limit: t("billing.upTo100Emp"),
-    },
-    {
-      key: "enterprise",
-      name: t("billing.planEnterprise"),
-      price: t("billing.enterprisePrice"),
-      desc: t("billing.enterpriseDesc"),
-      limit: t("billing.unlimitedEmp"),
-    },
-  ];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -256,47 +298,70 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground">{t("billing.upgradeDesc")}</p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {plans.map((plan) => {
-              const isCurrent = billing.plan === plan.key || (billing.plan === "trial" && plan.key === "starter");
-              return (
-                <div
-                  key={plan.key}
-                  className="rounded-md border p-4 space-y-3 flex flex-col"
-                  data-testid={`plan-card-${plan.key}`}
-                >
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="font-medium">{plan.name}</span>
-                    {isCurrent && (
-                      <Badge variant="outline" data-testid={`badge-current-${plan.key}`}>
-                        {t("billing.currentLabel")}
-                      </Badge>
-                    )}
+          {plans.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center" data-testid="text-no-plans">
+              {t("billing.stripeNotConfigured")}
+            </p>
+          ) : (
+            <div className={`grid grid-cols-1 gap-4 ${plans.length >= 2 ? "sm:grid-cols-2" : ""} ${plans.length >= 3 ? "lg:grid-cols-3" : ""}`}>
+              {plans.map((plan) => {
+                const isCurrent = billing.plan === plan.planKey;
+                const planLoading = checkoutLoading === plan.planKey;
+                const priceLabel = plan.displayPrice
+                  ? `${plan.displayPrice}/${plan.interval === "month" ? t("billing.perMonth").replace("/", "") : plan.interval}`
+                  : t("billing.priceInCheckout");
+
+                return (
+                  <div
+                    key={plan.planKey}
+                    className="rounded-md border p-4 space-y-3 flex flex-col"
+                    data-testid={`plan-card-${plan.planKey}`}
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="font-medium">{plan.name}</span>
+                      {isCurrent && (
+                        <Badge variant="outline" data-testid={`badge-current-${plan.planKey}`}>
+                          {t("billing.currentLabel")}
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-lg font-semibold text-muted-foreground" data-testid={`text-price-${plan.planKey}`}>
+                      {priceLabel}
+                    </span>
+                    <ul className="space-y-1.5 text-xs text-muted-foreground">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                          <Check className="h-3.5 w-3.5 mt-0.5 text-green-500 shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-auto pt-2">
+                      {isCurrent ? (
+                        <Button variant="outline" disabled className="w-full" data-testid={`button-plan-current-${plan.planKey}`}>
+                          <Check className="h-4 w-4 mr-1" />
+                          {t("billing.currentLabel")}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="default"
+                          className="w-full"
+                          onClick={() => handleUpgrade(plan.planKey)}
+                          disabled={planLoading}
+                          data-testid={`button-select-plan-${plan.planKey}`}
+                        >
+                          {planLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                          ) : null}
+                          {t("billing.upgrade")}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xl font-semibold">{plan.price}</span>
-                  <p className="text-xs text-muted-foreground">{plan.desc}</p>
-                  <p className="text-xs text-muted-foreground">{plan.limit}</p>
-                  <div className="mt-auto pt-2">
-                    {isCurrent ? (
-                      <Button variant="outline" disabled className="w-full" data-testid={`button-plan-current-${plan.key}`}>
-                        <Check className="h-4 w-4 mr-1" />
-                        {t("billing.currentLabel")}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="default"
-                        className="w-full"
-                        onClick={() => handleSelectPlan(plan.key)}
-                        data-testid={`button-select-plan-${plan.key}`}
-                      >
-                        {t("billing.selectPlan")}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
