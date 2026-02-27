@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedJsonResponse: Record<string, any> | undefined;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -45,14 +45,16 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
+
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      if (logLine.length > 120) {
+        logLine = logLine.slice(0, 119) + "…";
       }
 
       log(logLine);
@@ -75,7 +77,6 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
   });
 
   if (app.get("env") === "development") {
@@ -86,11 +87,11 @@ app.use((req, res, next) => {
 
   const port = parseInt(process.env.PORT || "5000", 10);
 
-  // Bulletproof: respect HOST env var first (we'll set it in dev),
-  // otherwise default to localhost for safety on Windows.
-  const host = process.env.HOST || "127.0.0.1";
+  // ✅ CRITICAL: Bind correctly for production vs local
+  const host =
+    process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
 
   server.listen(port, host, () => {
-    log(`Server running at http://${host}:${port}`);
+    log(`Server running on http://${host}:${port}`);
   });
 })();
