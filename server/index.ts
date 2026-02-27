@@ -6,24 +6,30 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 app.use(configureCors());
 
-declare module 'http' {
+declare module "http" {
   interface IncomingMessage {
-    rawBody: unknown
+    rawBody: unknown;
   }
 }
-app.use(express.json({
-  limit: "2mb",
-  verify: (req, _res, buf) => {
-    req.rawBody = buf;
-  }
-}));
+
+app.use(
+  express.json({
+    limit: "2mb",
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
+
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 app.use((req, res, next) => {
@@ -78,12 +84,13 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  const port = parseInt(process.env.PORT || "5000", 10);
+
+  // Bulletproof: respect HOST env var first (we'll set it in dev),
+  // otherwise default to localhost for safety on Windows.
+  const host = process.env.HOST || "127.0.0.1";
+
+  server.listen(port, host, () => {
+    log(`Server running at http://${host}:${port}`);
   });
 })();

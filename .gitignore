@@ -4,3 +4,12 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+*.zip
+
+# Environment files (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+
+# Local backups
+.env.localbackup
