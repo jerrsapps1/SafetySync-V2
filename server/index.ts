@@ -15,6 +15,10 @@ app.use(
 
 app.use(configureCors());
 
+// ✅ MUST come before everything else (so it can't be swallowed by SPA fallback)
+app.get("/health", (_req, res) => res.status(200).json({ ok: true, service: "api" }));
+app.get("/api/health", (_req, res) => res.status(200).json({ ok: true, service: "api" }));
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -32,35 +36,9 @@ app.use(
 
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 120) {
-        logLine = logLine.slice(0, 119) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
+// ✅ request logging (proves what route is being hit)
+app.use((req, _res, next) => {
+  log(`[REQ] ${req.method} ${req.path}`);
   next();
 });
 
@@ -75,7 +53,6 @@ app.use((req, res, next) => {
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
   });
 
@@ -86,8 +63,6 @@ app.use((req, res, next) => {
   }
 
   const port = parseInt(process.env.PORT || "5000", 10);
-
-  // ✅ CRITICAL: Bind correctly for production vs local
   const host =
     process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
 
