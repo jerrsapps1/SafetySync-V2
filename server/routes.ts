@@ -1,24 +1,51 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateToken, hashPassword, comparePassword, requireAuth, requireRole, requireEntitlement } from "./auth";
-import { insertUserSchema, insertCompanySchema, insertLocationSchema, insertEmployeeSchema, insertTrainingRecordSchema } from "@shared/schema";
+import {
+  generateToken,
+  hashPassword,
+  comparePassword,
+  requireAuth,
+  requireRole,
+  requireEntitlement,
+} from "./auth";
+import {
+  insertUserSchema,
+  insertCompanySchema,
+  insertLocationSchema,
+  insertEmployeeSchema,
+  insertTrainingRecordSchema,
+} from "@shared/schema";
 import { authRateLimit } from "./rate-limit";
 import adminRoutes from "./admin-routes";
 import type { UserRole } from "@shared/schema";
-import { isStripeConfigured, getPlansFromEnv, getOrCreateStripeCustomer, createCheckoutSession, createPortalSession, getSubscriptionStatus, constructWebhookEvent } from "./stripe";
+import {
+  isStripeConfigured,
+  getPlansFromEnv,
+  getOrCreateStripeCustomer,
+  createCheckoutSession,
+  createPortalSession,
+  getSubscriptionStatus,
+  constructWebhookEvent,
+} from "./stripe";
 import type { Company } from "@shared/schema";
 
 function getOrgEntitlements(company: Company) {
   const now = new Date();
-  const trialActive = company.billingStatus === "trial" && company.trialEndDate && new Date(company.trialEndDate) > now;
+  const trialActive =
+    company.billingStatus === "trial" &&
+    company.trialEndDate &&
+    new Date(company.trialEndDate) > now;
   const isActive = company.billingStatus === "active" || trialActive;
 
-  const planLimits: Record<string, { employeeLimit: number; canUseAIIngestion: boolean; canExportReports: boolean }> = {
-    trial:      { employeeLimit: 25,    canUseAIIngestion: true,  canExportReports: true },
-    starter:    { employeeLimit: 5,     canUseAIIngestion: false, canExportReports: false },
-    pro:        { employeeLimit: 100,   canUseAIIngestion: true,  canExportReports: true },
-    enterprise: { employeeLimit: 99999, canUseAIIngestion: true,  canExportReports: true },
+  const planLimits: Record<
+    string,
+    { employeeLimit: number; canUseAIIngestion: boolean; canExportReports: boolean }
+  > = {
+    trial: { employeeLimit: 25, canUseAIIngestion: true, canExportReports: true },
+    starter: { employeeLimit: 5, canUseAIIngestion: false, canExportReports: false },
+    pro: { employeeLimit: 100, canUseAIIngestion: true, canExportReports: true },
+    enterprise: { employeeLimit: 99999, canUseAIIngestion: true, canExportReports: true },
   };
 
   const limits = planLimits[company.plan] || planLimits.starter;
@@ -36,10 +63,18 @@ function getOrgEntitlements(company: Company) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
   app.use("/api/admin", adminRoutes);
 
-  app.post("/api/billing/webhook", async (req, res) => {
+  /**
+   * Stripe Webhook Handler (shared)
+   * Supports BOTH:
+   *  - /api/billing/webhook   (your current route)
+   *  - /api/stripe/webhook    (common Stripe CLI route)
+   *
+   * IMPORTANT: this requires your server to capture rawBody somewhere BEFORE routes.
+   * (Usually via express.json({ verify: (req,res,buf)=>{ (req as any).rawBody = buf } }))
+   */
+  const stripeWebhookHandler = async (req: any, res: any) => {
     try {
       if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
         return res.status(501).json({ error: "Webhook not configured" });
@@ -55,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing raw body" });
       }
 
-      let event;
+      let event: any;
       try {
         event = constructWebhookEvent(rawBody, signature);
       } catch (err: any) {
@@ -63,20 +98,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid signature" });
       }
 
+      // ACK Stripe immediately
       res.status(200).json({ received: true });
 
+      // Process after ACK
       try {
         switch (event.type) {
           case "checkout.session.completed": {
             const session = event.data.object as any;
+
             const orgId = session.metadata?.org_id;
             const planKey = session.metadata?.plan_key;
-            const subscriptionId = typeof session.subscription === "string"
-              ? session.subscription
-              : session.subscription?.id;
-            const customerId = typeof session.customer === "string"
-              ? session.customer
-              : session.customer?.id;
+
+            const subscriptionId =
+              typeof session.subscription === "string"
+                ? session.subscription
+                : session.subscription?.id;
+
+            const customerId =
+              typeof session.customer === "string" ? session.customer : session.customer?.id;
 
             if (orgId && planKey && subscriptionId) {
               const updateData: Record<string, any> = {
@@ -84,9 +124,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 billingStatus: "active",
                 stripeSubscriptionId: subscriptionId,
               };
-              if (customerId) {
-                updateData.stripeCustomerId = customerId;
-              }
+              if (customerId) updateData.stripeCustomerId = customerId;
+
               await storage.updateCompany(orgId, updateData);
               console.log(`Webhook: checkout.session.completed - org=${orgId} plan=${planKey}`);
             }
@@ -95,9 +134,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           case "customer.subscription.updated": {
             const subscription = event.data.object as any;
-            const customerId = typeof subscription.customer === "string"
-              ? subscription.customer
-              : subscription.customer?.id;
+
+            const customerId =
+              typeof subscription.customer === "string"
+                ? subscription.customer
+                : subscription.customer?.id;
 
             if (!customerId) break;
 
@@ -126,15 +167,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               plan: planKey,
               stripeSubscriptionId: subscription.id,
             });
+
             console.log(`Webhook: subscription.updated - org=${company.id} status=${newStatus}`);
             break;
           }
 
           case "customer.subscription.deleted": {
             const subscription = event.data.object as any;
-            const customerId = typeof subscription.customer === "string"
-              ? subscription.customer
-              : subscription.customer?.id;
+
+            const customerId =
+              typeof subscription.customer === "string"
+                ? subscription.customer
+                : subscription.customer?.id;
 
             if (!customerId) break;
 
@@ -145,6 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               billingStatus: "canceled",
               plan: "starter",
             });
+
             console.log(`Webhook: subscription.deleted - org=${company.id} downgraded to starter`);
             break;
           }
@@ -158,7 +203,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ error: "Webhook handler error" });
       }
     }
-  });
+  };
+
+  // Register BOTH webhook URLs so you never have to chase this again
+  app.post("/api/billing/webhook", stripeWebhookHandler);
+  app.post("/api/stripe/webhook", stripeWebhookHandler);
+
+  // -------------------------
+  // AUTH
+  // -------------------------
 
   app.post("/api/auth/create-account", authRateLimit, async (req, res) => {
     try {
@@ -249,14 +302,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", authRateLimit, async (req, res) => {
     try {
       const { username, email, password, companyName } = req.body;
-      
+
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ error: "Email already in use" });
       }
 
       const hashedPassword = await hashPassword(password);
-      
+
       let companyId = null;
       if (companyName) {
         const company = await storage.createCompany({ name: companyName });
@@ -270,8 +323,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companyId,
       });
 
-      const token = generateToken({ 
-        userId: user.id, 
+      const token = generateToken({
+        userId: user.id,
         email: user.email,
         role: (user.role as UserRole) || "workspace_user",
         orgId: user.companyId,
@@ -301,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         user = await storage.getUserByUsername(email);
       }
-      
+
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
@@ -347,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).user.id;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -377,6 +430,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // -------------------------
+  // WORKSPACE ENTITLEMENTS (KEEP THIS ONE)
+  // -------------------------
   const safetysyncGuard = requireEntitlement("safetysync");
 
   app.get("/api/workspace/entitlements", requireAuth, async (req, res) => {
@@ -403,10 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const entitlements: Record<string, { enabled: boolean; plan: string }> = {};
       for (const row of entitlementRows) {
-        entitlements[row.productSlug] = {
-          enabled: row.enabled,
-          plan: row.plan,
-        };
+        entitlements[row.productSlug] = { enabled: row.enabled, plan: row.plan };
       }
 
       res.json({
@@ -421,12 +474,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // -------------------------
+  // LOCATIONS / EMPLOYEES / TRAINING
+  // -------------------------
+
   app.get("/api/locations", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
       const locations = await storage.getLocations(companyId);
       res.json(locations);
     } catch (error: any) {
@@ -437,14 +492,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/locations", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const result = insertLocationSchema.safeParse({ ...req.body, companyId });
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
+      if (!result.success) return res.status(400).json({ error: result.error.message });
 
       const location = await storage.createLocation(result.data);
       res.json(location);
@@ -456,9 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/employees", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
       const employees = await storage.getEmployees(companyId);
       res.json(employees);
     } catch (error: any) {
@@ -469,14 +518,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const employee = await storage.getEmployee(req.params.id, companyId);
-      if (!employee) {
-        return res.status(404).json({ error: "Employee not found" });
-      }
+      if (!employee) return res.status(404).json({ error: "Employee not found" });
+
       res.json(employee);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to get employee" });
@@ -486,14 +532,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/employees", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const result = insertEmployeeSchema.safeParse({ ...req.body, companyId });
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
+      if (!result.success) return res.status(400).json({ error: result.error.message });
 
       const employee = await storage.createEmployee(result.data);
       res.json(employee);
@@ -505,14 +547,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const employee = await storage.updateEmployee(req.params.id, companyId, req.body);
-      if (!employee) {
-        return res.status(404).json({ error: "Employee not found or unauthorized" });
-      }
+      if (!employee) return res.status(404).json({ error: "Employee not found or unauthorized" });
+
       res.json(employee);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to update employee" });
@@ -522,9 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       await storage.deleteEmployee(req.params.id, companyId);
       res.json({ success: true });
@@ -536,10 +573,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/training-records", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
-      
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
+
       const records = await storage.getTrainingRecordsByCompany(companyId);
       res.json(records);
     } catch (error: any) {
@@ -550,10 +585,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/training-records/expiring", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
-      
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
+
       const daysAhead = parseInt(req.query.days as string) || 30;
       const records = await storage.getExpiringRecords(companyId, daysAhead);
       res.json(records);
@@ -562,35 +595,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees/:employeeId/training-records", requireAuth, safetysyncGuard, async (req, res) => {
-    try {
-      const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+  app.get(
+    "/api/employees/:employeeId/training-records",
+    requireAuth,
+    safetysyncGuard,
+    async (req, res) => {
+      try {
+        const companyId = (req as any).user.orgId;
+        if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
-      const records = await storage.getTrainingRecords(req.params.employeeId, companyId);
-      res.json(records);
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to get training records" });
+        const records = await storage.getTrainingRecords(req.params.employeeId, companyId);
+        res.json(records);
+      } catch (error: any) {
+        res.status(500).json({ error: "Failed to get training records" });
+      }
     }
-  });
+  );
 
   app.post("/api/training-records", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const result = insertTrainingRecordSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
+      if (!result.success) return res.status(400).json({ error: result.error.message });
 
       const employee = await storage.getEmployee(result.data.employeeId, companyId);
       if (!employee) {
-        return res.status(403).json({ error: "Cannot create training record for employee outside your company" });
+        return res
+          .status(403)
+          .json({ error: "Cannot create training record for employee outside your company" });
       }
 
       const record = await storage.createTrainingRecord(result.data);
@@ -603,14 +637,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/training-records/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const record = await storage.updateTrainingRecord(req.params.id, companyId, req.body);
-      if (!record) {
-        return res.status(404).json({ error: "Training record not found or unauthorized" });
-      }
+      if (!record) return res.status(404).json({ error: "Training record not found or unauthorized" });
+
       res.json(record);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to update training record" });
@@ -620,9 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/training-records/:id", requireAuth, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       await storage.deleteTrainingRecord(req.params.id, companyId);
       res.json({ success: true });
@@ -631,17 +660,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // -------------------------
+  // BILLING
+  // -------------------------
+
   app.get("/api/billing/summary", requireAuth, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const company = await storage.getCompany(companyId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
-      }
+      if (!company) return res.status(404).json({ error: "Company not found" });
 
       const employeesList = await storage.getEmployees(companyId);
       const records = await storage.getTrainingRecordsByCompany(companyId);
@@ -654,9 +683,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const subStatus = await getSubscriptionStatus(company.stripeSubscriptionId);
           billingStatus = subStatus.status;
-          if (subStatus.planKey) {
-            plan = subStatus.planKey;
-          }
+          if (subStatus.planKey) plan = subStatus.planKey;
+
           if (billingStatus === "active" || billingStatus === "past_due") {
             if (company.plan !== plan || company.billingStatus !== billingStatus) {
               await storage.updateCompany(companyId, { plan, billingStatus });
@@ -694,14 +722,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
+      if (!companyId) return res.status(403).json({ error: "No company associated with user" });
 
       const company = await storage.getCompany(companyId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
-      }
+      if (!company) return res.status(404).json({ error: "Company not found" });
 
       const { getCheckoutSession: fetchSession } = await import("./stripe");
       const session = await fetchSession(sessionId);
@@ -710,9 +734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Session does not belong to this organization" });
       }
 
-      const subscriptionId = typeof session.subscription === "string"
-        ? session.subscription
-        : (session.subscription as any)?.id;
+      const subscriptionId =
+        typeof session.subscription === "string" ? session.subscription : (session.subscription as any)?.id;
 
       if (!subscriptionId) {
         return res.json({ status: "pending" });
@@ -726,7 +749,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (subscriptionId !== company.stripeSubscriptionId) {
         await storage.updateCompany(companyId, {
           stripeSubscriptionId: subscriptionId,
-          stripeCustomerId: company.stripeCustomerId || (typeof session.customer === "string" ? session.customer : undefined),
+          stripeCustomerId:
+            company.stripeCustomerId || (typeof session.customer === "string" ? session.customer : undefined),
           plan: planKey,
           billingStatus: "active",
         });
@@ -747,12 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       interval: "month",
       currency: "usd",
       displayPrice: "",
-      features: [
-        "Up to 100 employees",
-        "Unlimited training records",
-        "Compliance dashboard",
-        "Priority support",
-      ],
+      features: ["Up to 100 employees", "Unlimited training records", "Compliance dashboard", "Priority support"],
     },
     {
       planKey: "enterprise",
@@ -788,9 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/billing/checkout", requireAuth, async (req, res) => {
     try {
       if (!isStripeConfigured()) {
-        return res.status(501).json({
-          error: "Stripe is not configured. Please contact support.",
-        });
+        return res.status(501).json({ error: "Stripe is not configured. Please contact support." });
       }
 
       const { planKey, successUrl, cancelUrl } = req.body;
@@ -806,16 +823,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const companyId = (req as any).user.orgId;
       const userEmail = (req as any).user.email;
+
       const company = await storage.getCompany(companyId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
-      }
+      if (!company) return res.status(404).json({ error: "Company not found" });
 
       const customerId = await getOrCreateStripeCustomer(
         companyId,
         company.stripeCustomerId,
         company.name,
-        userEmail,
+        userEmail
       );
 
       if (!company.stripeCustomerId) {
@@ -826,13 +842,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fullSuccessUrl = successUrl.startsWith("http") ? successUrl : `${baseUrl}${successUrl}`;
       const fullCancelUrl = cancelUrl.startsWith("http") ? cancelUrl : `${baseUrl}${cancelUrl}`;
 
-      const url = await createCheckoutSession(
-        customerId,
-        plan.priceId,
-        fullSuccessUrl,
-        fullCancelUrl,
-        { orgId: companyId, planKey: plan.planKey },
-      );
+      const url = await createCheckoutSession(customerId, plan.priceId, fullSuccessUrl, fullCancelUrl, {
+        orgId: companyId,
+        planKey: plan.planKey,
+      });
+
       res.json({ url });
     } catch (error: any) {
       console.error("Billing checkout error:", error);
@@ -853,16 +867,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const companyId = (req as any).user.orgId;
       const userEmail = (req as any).user.email;
+
       const company = await storage.getCompany(companyId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
-      }
+      if (!company) return res.status(404).json({ error: "Company not found" });
 
       const customerId = await getOrCreateStripeCustomer(
         companyId,
         company.stripeCustomerId,
         company.name,
-        userEmail,
+        userEmail
       );
 
       if (!company.stripeCustomerId) {
@@ -884,26 +897,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/workspace/entitlements", requireAuth, async (req, res) => {
-    try {
-      const companyId = (req as any).user.orgId;
-      if (!companyId) {
-        return res.status(403).json({ error: "No company associated with user" });
-      }
-
-      const company = await storage.getCompany(companyId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
-      }
-
-      const entitlements = getOrgEntitlements(company);
-      res.json(entitlements);
-    } catch (error: any) {
-      console.error("Entitlements error:", error);
-      res.status(500).json({ error: "Failed to get entitlements" });
-    }
-  });
-
   if (process.env.NODE_ENV === "development") {
     app.post("/api/dev/seed", async (req, res) => {
       try {
@@ -918,6 +911,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   const httpServer = createServer(app);
-
   return httpServer;
 }
