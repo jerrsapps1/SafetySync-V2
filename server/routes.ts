@@ -140,9 +140,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const session = event.data.object as any;
             console.log("[CHECKOUT_METADATA_RAW]", session.metadata);
 
-            const orgId = session.metadata?.org_id;
-            const planKey = session.metadata?.plan_key;
-            console.log("[CHECKOUT_ORG_RESOLVED]", { orgId });
+            const orgId =
+              (session.metadata?.orgId as string | undefined) ??
+              (session.metadata?.org_id as string | undefined) ??
+              (session.client_reference_id as string | undefined) ??
+              undefined;
+
+            const planKey =
+              (session.metadata?.planKey as string | undefined) ??
+              (session.metadata?.plan_key as string | undefined) ??
+              undefined;
+
+            console.log("[CHECKOUT_ORG_RESOLVED]", { orgId, planKey });
 
             const subscriptionId =
               typeof session.subscription === "string"
