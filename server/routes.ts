@@ -8,6 +8,7 @@ import {
   requireAuth,
   requireRole,
   requireEntitlement,
+  requireActiveSubscription,
 } from "./auth";
 import {
   insertUserSchema,
@@ -370,11 +371,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
+  // Webhook routes - NO auth, NO billing gate
   app.post("/api/billing/webhook", stripeWebhookHandler);
   app.post("/api/stripe/webhook", stripeWebhookHandler);
 
   // -------------------------
-  // AUTH
+  // AUTH (no billing gate)
   // -------------------------
 
   app.post("/api/auth/create-account", authRateLimit, async (req, res) => {
@@ -595,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // -------------------------
-  // WORKSPACE ENTITLEMENTS (KEEP THIS ONE)
+  // WORKSPACE ENTITLEMENTS (no billing gate - needed to check status)
   // -------------------------
   const safetysyncGuard = requireEntitlement("safetysync");
 
@@ -639,10 +641,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // -------------------------
-  // LOCATIONS / EMPLOYEES / TRAINING
+  // PROTECTED WORKSPACE ROUTES
+  // These require: auth + active subscription + safetysync entitlement
   // -------------------------
 
-  app.get("/api/locations", requireAuth, safetysyncGuard, async (req, res) => {
+  app.get("/api/locations", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -653,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/locations", requireAuth, safetysyncGuard, async (req, res) => {
+  app.post("/api/locations", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -668,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees", requireAuth, safetysyncGuard, async (req, res) => {
+  app.get("/api/employees", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -679,7 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
+  app.get("/api/employees/:id", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -693,7 +696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/employees", requireAuth, safetysyncGuard, async (req, res) => {
+  app.post("/api/employees", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -708,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
+  app.patch("/api/employees/:id", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -722,7 +725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/employees/:id", requireAuth, safetysyncGuard, async (req, res) => {
+  app.delete("/api/employees/:id", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -734,7 +737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/training-records", requireAuth, safetysyncGuard, async (req, res) => {
+  app.get("/api/training-records", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -746,7 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/training-records/expiring", requireAuth, safetysyncGuard, async (req, res) => {
+  app.get("/api/training-records/expiring", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -762,6 +765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/employees/:employeeId/training-records",
     requireAuth,
+    requireActiveSubscription,
     safetysyncGuard,
     async (req, res) => {
       try {
@@ -776,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  app.post("/api/training-records", requireAuth, safetysyncGuard, async (req, res) => {
+  app.post("/api/training-records", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -798,7 +802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/training-records/:id", requireAuth, safetysyncGuard, async (req, res) => {
+  app.patch("/api/training-records/:id", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -812,7 +816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/training-records/:id", requireAuth, safetysyncGuard, async (req, res) => {
+  app.delete("/api/training-records/:id", requireAuth, requireActiveSubscription, safetysyncGuard, async (req, res) => {
     try {
       const companyId = (req as any).user.orgId;
       if (!companyId) return res.status(403).json({ error: "No company associated with user" });
@@ -825,7 +829,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // -------------------------
-  // BILLING
+  // ACCOUNT (no billing gate - users need access even when past_due/canceled)
+  // -------------------------
+
+  app.get("/api/account/summary", requireAuth, async (req, res) => {
+    try {
+      const companyId = (req as any).user.orgId;
+      if (!companyId) {
+        return res.status(403).json({ error: "No organization associated with user" });
+      }
+
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      const user = (req as any).user;
+      const fullUser = await storage.getUser(user.id);
+
+      const [employeesList, records, locationsList] = await Promise.all([
+        storage.getEmployees(companyId),
+        storage.getTrainingRecordsByCompany(companyId),
+        storage.getLocations(companyId),
+      ]);
+
+      res.json({
+        company: {
+          id: company.id,
+          name: company.name,
+          phone: company.phone || null,
+          country: company.country || null,
+          state: company.state || null,
+          createdAt: company.createdAt?.toISOString() || null,
+          plan: company.plan,
+          billingStatus: company.billingStatus,
+          trialEndDate: company.trialEndDate?.toISOString() || null,
+          stripeCustomerId: company.stripeCustomerId || null,
+          stripeSubscriptionId: company.stripeSubscriptionId || null,
+        },
+        accountHolder: {
+          id: user.id,
+          fullName: fullUser?.fullName || null,
+          username: fullUser?.username || null,
+          email: user.email,
+          role: user.role,
+        },
+        entitlements: getOrgEntitlements(company),
+        counts: {
+          employeesCount: employeesList.length,
+          trainingRecordsCount: records.length,
+          locationsCount: locationsList.length,
+        },
+      });
+    } catch (error: any) {
+      console.error("Account summary error:", error);
+      res.status(500).json({ error: "Failed to get account summary" });
+    }
+  });
+
+  app.get("/api/account/security", requireAuth, async (req, res) => {
+    res.json({
+      reauthSupported: true,
+      reauthRecommended: true,
+      reauthWindowMinutes: 15,
+    });
+  });
+
+  // -------------------------
+  // BILLING (no billing gate - users need access to fix billing!)
   // -------------------------
 
   app.get("/api/billing/summary", requireAuth, async (req, res) => {

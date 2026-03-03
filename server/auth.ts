@@ -6,6 +6,13 @@ import type { UserRole } from "@shared/schema";
 const JWT_SECRET = process.env.SESSION_SECRET || "your-secret-key-change-in-production";
 const JWT_EXPIRES_IN = "7d";
 
+const BILLING_DEBUG = process.env.BILLING_DEBUG === "true";
+function dlog(...args: any[]) {
+  if (BILLING_DEBUG) console.log(...args);
+}
+
+const BILLING_BYPASS_ROLES: UserRole[] = ["owner_admin", "csr_admin"];
+
 export interface JWTPayload {
   userId: string;
   email: string;
@@ -145,4 +152,83 @@ export function requireEntitlement(productSlug: string) {
       return res.status(500).json({ error: "Failed to verify entitlement" });
     }
   };
+}
+
+/**
+ * Middleware to enforce active subscription for protected routes.
+ * Must run AFTER requireAuth so req.user is populated.
+ *
+ * Bypasses:
+ * - owner_admin and csr_admin roles
+ * - Users without an orgId (to avoid breaking onboarding)
+ *
+ * Allows:
+ * - billingStatus === "active"
+ * - billingStatus === "trial" with valid (future) trialEndDate
+ *
+ * Returns 402 Payment Required for all other billing states.
+ */
+export function requireActiveSubscription(req: Request, res: Response, next: NextFunction) {
+  const user = (req as any).user;
+
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  if (BILLING_BYPASS_ROLES.includes(user.role)) {
+    dlog("[BILLING_GATE] bypassed for role", { role: user.role, userId: user.id });
+    return next();
+  }
+
+  if (!user.orgId) {
+    dlog("[BILLING_GATE] no orgId, allowing (onboarding flow)", { userId: user.id });
+    return next();
+  }
+
+  (async () => {
+    try {
+      const { storage } = await import("./storage");
+      const company = await storage.getCompany(user.orgId);
+
+      if (!company) {
+        dlog("[BILLING_GATE] company not found, allowing", { orgId: user.orgId });
+        return next();
+      }
+
+      const billingStatus = company.billingStatus || "trial";
+
+      if (billingStatus === "active") {
+        dlog("[BILLING_GATE] active subscription", { orgId: user.orgId });
+        return next();
+      }
+
+      if (billingStatus === "trial") {
+        const now = new Date();
+        const trialEnd = company.trialEndDate ? new Date(company.trialEndDate) : null;
+
+        if (trialEnd && trialEnd > now) {
+          dlog("[BILLING_GATE] trial active", {
+            orgId: user.orgId,
+            trialEndsAt: trialEnd.toISOString(),
+          });
+          return next();
+        }
+      }
+
+      console.log("[BILLING_GATE] blocked", {
+        orgId: user.orgId,
+        billingStatus,
+        path: req.path,
+      });
+
+      return res.status(402).json({
+        error: "subscription_required",
+        billingStatus,
+        message: "Subscription is not active. Please update billing to regain access.",
+      });
+    } catch (error) {
+      console.error("[BILLING_GATE] error checking subscription:", error);
+      return res.status(500).json({ error: "Failed to verify subscription status" });
+    }
+  })();
 }
