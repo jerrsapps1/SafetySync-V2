@@ -30,6 +30,22 @@ import {
 } from "./stripe";
 import type { Company } from "@shared/schema";
 
+const STRIPE_DEBUG = process.env.STRIPE_DEBUG === "true";
+function dlog(...args: any[]) {
+  if (STRIPE_DEBUG) console.log(...args);
+}
+
+const STRIPE_STATUS_MAP: Record<string, string> = {
+  active: "active",
+  past_due: "past_due",
+  canceled: "canceled",
+  unpaid: "past_due",
+  incomplete: "active",
+  incomplete_expired: "canceled",
+  trialing: "trial",
+  paused: "canceled",
+};
+
 function getOrgEntitlements(company: Company) {
   const now = new Date();
   const trialActive =
@@ -62,6 +78,30 @@ function getOrgEntitlements(company: Company) {
   };
 }
 
+async function resolveCompanyFromSubscription(subscription: any): Promise<Company | null> {
+  const orgId =
+    (subscription.metadata?.orgId as string | undefined) ??
+    (subscription.metadata?.org_id as string | undefined) ??
+    undefined;
+
+  if (orgId) {
+    const company = await storage.getCompany(orgId);
+    if (company) return company;
+  }
+
+  const customerId =
+    typeof subscription.customer === "string"
+      ? subscription.customer
+      : subscription.customer?.id;
+
+  if (customerId) {
+    const company = await storage.getCompanyByStripeCustomerId(customerId);
+    if (company) return company;
+  }
+
+  return null;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/admin", adminRoutes);
 
@@ -70,19 +110,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * Supports BOTH:
    *  - /api/billing/webhook   (your current route)
    *  - /api/stripe/webhook    (common Stripe CLI route)
-   *
-   * IMPORTANT: this requires your server to capture rawBody somewhere BEFORE routes.
-   * (Usually via express.json({ verify: (req,res,buf)=>{ (req as any).rawBody = buf } }))
    */
   const stripeWebhookHandler = async (req: any, res: any) => {
-    console.log("🔥 STRIPE HANDLER EXECUTED", { path: req.path });
-
-    // Truth log: always log when webhook is hit
-    console.log("[STRIPE_WEBHOOK] hit", { path: req.path });
+    dlog("[STRIPE_WEBHOOK] hit", { path: req.path });
 
     try {
       if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
-        // Truth log: explain WHY we're returning 501
         const hasSecretKey = !!process.env.STRIPE_SECRET_KEY;
         const hasWebhookSecret = !!process.env.STRIPE_WEBHOOK_SECRET;
         console.error("[STRIPE_WEBHOOK] not configured", {
@@ -106,16 +139,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let event: any;
       try {
-        console.log("BEFORE constructEvent");
+        dlog("BEFORE constructEvent");
         const stripe = getStripe();
         event = stripe.webhooks.constructEvent(
           rawBody,
           req.headers["stripe-signature"] as string,
           process.env.STRIPE_WEBHOOK_SECRET!
         );
-        console.log("AFTER constructEvent");
+        dlog("AFTER constructEvent");
       } catch (err: any) {
-        console.error("❌ STRIPE SIGNATURE FAILED", err?.message);
+        console.error("[STRIPE_WEBHOOK] signature failed", err?.message);
         return res.status(400).send("Webhook signature verification failed");
       }
 
@@ -125,20 +158,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         livemode: event.livemode,
       });
 
-      // ACK Stripe immediately
       res.status(200).json({ received: true });
 
-      // Process after ACK
       try {
         switch (event.type) {
           case "checkout.session.completed": {
-            console.log("[STRIPE_EVENT_HANDLER]", {
-              type: event.type,
-              eventId: event.id,
-            });
-            console.log("[CHECKOUT_HANDLER_START]", { eventId: event.id });
             const session = event.data.object as any;
-            console.log("[CHECKOUT_METADATA_RAW]", session.metadata);
+            dlog("[CHECKOUT_METADATA_RAW]", session.metadata);
 
             const orgId =
               (session.metadata?.orgId as string | undefined) ??
@@ -151,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               (session.metadata?.plan_key as string | undefined) ??
               undefined;
 
-            console.log("[CHECKOUT_ORG_RESOLVED]", { orgId, planKey });
+            dlog("[CHECKOUT_ORG_RESOLVED]", { orgId, planKey });
 
             const subscriptionId =
               typeof session.subscription === "string"
@@ -176,44 +202,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 planKey,
                 status: "active",
               });
-              console.log(`Webhook: checkout.session.completed - org=${orgId} plan=${planKey}`);
             }
             break;
           }
 
-          case "customer.subscription.updated": {
-            console.log("[STRIPE_EVENT_HANDLER]", {
-              type: event.type,
-              eventId: event.id,
-            });
+          case "customer.subscription.created": {
             const subscription = event.data.object as any;
+            const company = await resolveCompanyFromSubscription(subscription);
 
-            const customerId =
-              typeof subscription.customer === "string"
-                ? subscription.customer
-                : subscription.customer?.id;
-
-            if (!customerId) break;
-
-            const company = await storage.getCompanyByStripeCustomerId(customerId);
             if (!company) {
-              console.error(`Webhook: subscription.updated - no company for customer ${customerId}`);
+              dlog("[SUB_CREATED] no company found for subscription", subscription.id);
               break;
             }
 
-            const statusMap: Record<string, string> = {
-              active: "active",
-              past_due: "past_due",
-              canceled: "canceled",
-              unpaid: "past_due",
-              incomplete: "active",
-              incomplete_expired: "canceled",
-              trialing: "trial",
-              paused: "canceled",
-            };
-
-            const newStatus = statusMap[subscription.status] || subscription.status;
-            const planKey = subscription.metadata?.plan_key || company.plan;
+            const newStatus = STRIPE_STATUS_MAP[subscription.status] || subscription.status;
+            const planKey =
+              subscription.metadata?.plan_key ||
+              subscription.metadata?.planKey ||
+              company.plan;
 
             await storage.updateCompany(company.id, {
               billingStatus: newStatus,
@@ -221,48 +227,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
               stripeSubscriptionId: subscription.id,
             });
 
-            console.log(`Webhook: subscription.updated - org=${company.id} status=${newStatus}`);
+            console.log("[SUB_CREATED_DB_UPDATED]", {
+              orgId: company.id,
+              subscriptionId: subscription.id,
+              planKey,
+              status: newStatus,
+            });
+            break;
+          }
+
+          case "customer.subscription.updated": {
+            const subscription = event.data.object as any;
+            const company = await resolveCompanyFromSubscription(subscription);
+
+            if (!company) {
+              console.error("[SUB_UPDATED] no company found", {
+                subscriptionId: subscription.id,
+              });
+              break;
+            }
+
+            const newStatus = STRIPE_STATUS_MAP[subscription.status] || subscription.status;
+            const planKey =
+              subscription.metadata?.plan_key ||
+              subscription.metadata?.planKey ||
+              company.plan;
+
+            await storage.updateCompany(company.id, {
+              billingStatus: newStatus,
+              plan: planKey,
+              stripeSubscriptionId: subscription.id,
+            });
+
+            console.log("[SUB_UPDATED_DB_UPDATED]", {
+              orgId: company.id,
+              subscriptionId: subscription.id,
+              planKey,
+              status: newStatus,
+            });
             break;
           }
 
           case "customer.subscription.deleted": {
-            console.log("[STRIPE_EVENT_HANDLER]", {
-              type: event.type,
-              eventId: event.id,
-            });
             const subscription = event.data.object as any;
+            const company = await resolveCompanyFromSubscription(subscription);
 
-            const customerId =
-              typeof subscription.customer === "string"
-                ? subscription.customer
-                : subscription.customer?.id;
-
-            if (!customerId) break;
-
-            const company = await storage.getCompanyByStripeCustomerId(customerId);
-            if (!company) break;
+            if (!company) {
+              dlog("[SUB_DELETED] no company found for subscription", subscription.id);
+              break;
+            }
 
             await storage.updateCompany(company.id, {
               billingStatus: "canceled",
               plan: "starter",
             });
 
-            console.log(`Webhook: subscription.deleted - org=${company.id} downgraded to starter`);
+            console.log("[SUB_DELETED_DB_UPDATED]", {
+              orgId: company.id,
+              subscriptionId: subscription.id,
+              status: "canceled",
+            });
+            break;
+          }
+
+          case "invoice.paid": {
+            const invoice = event.data.object as any;
+            const subscriptionId =
+              typeof invoice.subscription === "string"
+                ? invoice.subscription
+                : invoice.subscription?.id;
+
+            if (!subscriptionId) {
+              dlog("[INVOICE_PAID] no subscription on invoice", invoice.id);
+              break;
+            }
+
+            const customerId =
+              typeof invoice.customer === "string"
+                ? invoice.customer
+                : invoice.customer?.id;
+
+            const company = customerId
+              ? await storage.getCompanyByStripeCustomerId(customerId)
+              : null;
+
+            if (!company) {
+              dlog("[INVOICE_PAID] no company found", { customerId, invoiceId: invoice.id });
+              break;
+            }
+
+            if (company.billingStatus !== "active") {
+              await storage.updateCompany(company.id, {
+                billingStatus: "active",
+              });
+              console.log("[INVOICE_PAID_DB_UPDATED]", {
+                orgId: company.id,
+                invoiceId: invoice.id,
+                status: "active",
+              });
+            }
+            break;
+          }
+
+          case "invoice.payment_failed": {
+            const invoice = event.data.object as any;
+            const customerId =
+              typeof invoice.customer === "string"
+                ? invoice.customer
+                : invoice.customer?.id;
+
+            if (!customerId) {
+              dlog("[INVOICE_FAILED] no customer on invoice", invoice.id);
+              break;
+            }
+
+            const company = await storage.getCompanyByStripeCustomerId(customerId);
+            if (!company) {
+              dlog("[INVOICE_FAILED] no company found", { customerId, invoiceId: invoice.id });
+              break;
+            }
+
+            await storage.updateCompany(company.id, {
+              billingStatus: "past_due",
+            });
+
+            console.log("[INVOICE_FAILED_DB_UPDATED]", {
+              orgId: company.id,
+              invoiceId: invoice.id,
+              status: "past_due",
+            });
             break;
           }
         }
       } catch (processingErr) {
-        console.error("Webhook event processing error:", processingErr);
+        console.error("[STRIPE_WEBHOOK] event processing error:", processingErr);
       }
     } catch (error: any) {
-      console.error("Webhook handler error:", error);
+      console.error("[STRIPE_WEBHOOK] handler error:", error);
       if (!res.headersSent) {
         res.status(500).json({ error: "Webhook handler error" });
       }
     }
   };
 
-  // Register BOTH webhook URLs so you never have to chase this again
   app.post("/api/billing/webhook", stripeWebhookHandler);
   app.post("/api/stripe/webhook", stripeWebhookHandler);
 
