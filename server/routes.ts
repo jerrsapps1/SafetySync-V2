@@ -138,6 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             console.log("[CHECKOUT_HANDLER_START]", { eventId: event.id });
             const session = event.data.object as any;
+            console.log("[CHECKOUT_METADATA_RAW]", session.metadata);
 
             const orgId = session.metadata?.org_id;
             const planKey = session.metadata?.plan_key;
