@@ -2,7 +2,7 @@ import Stripe from "stripe";
 
 let stripeClient: Stripe | null = null;
 
-function getStripe(): Stripe {
+export function getStripe(): Stripe {
   if (!stripeClient) {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key) {

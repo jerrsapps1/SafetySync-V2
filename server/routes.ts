@@ -26,7 +26,7 @@ import {
   createCheckoutSession,
   createPortalSession,
   getSubscriptionStatus,
-  constructWebhookEvent,
+  getStripe,
 } from "./stripe";
 import type { Company } from "@shared/schema";
 
@@ -106,11 +106,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let event: any;
       try {
-        event = constructWebhookEvent(rawBody, signature);
+        console.log("BEFORE constructEvent");
+        const stripe = getStripe();
+        event = stripe.webhooks.constructEvent(
+          rawBody,
+          req.headers["stripe-signature"] as string,
+          process.env.STRIPE_WEBHOOK_SECRET!
+        );
+        console.log("AFTER constructEvent");
       } catch (err: any) {
-        console.error("Webhook signature verification failed");
-        return res.status(400).json({ error: "Invalid signature" });
+        console.error("❌ STRIPE SIGNATURE FAILED", err?.message);
+        return res.status(400).send("Webhook signature verification failed");
       }
+
+      console.log("[STRIPE_EVENT]", {
+        id: event.id,
+        type: event.type,
+        livemode: event.livemode,
+      });
 
       // ACK Stripe immediately
       res.status(200).json({ received: true });
@@ -119,6 +132,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         switch (event.type) {
           case "checkout.session.completed": {
+            console.log("[STRIPE_EVENT_HANDLER]", {
+              type: event.type,
+              eventId: event.id,
+            });
             const session = event.data.object as any;
 
             const orgId = session.metadata?.org_id;
@@ -147,6 +164,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           case "customer.subscription.updated": {
+            console.log("[STRIPE_EVENT_HANDLER]", {
+              type: event.type,
+              eventId: event.id,
+            });
             const subscription = event.data.object as any;
 
             const customerId =
@@ -187,6 +208,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           case "customer.subscription.deleted": {
+            console.log("[STRIPE_EVENT_HANDLER]", {
+              type: event.type,
+              eventId: event.id,
+            });
             const subscription = event.data.object as any;
 
             const customerId =
