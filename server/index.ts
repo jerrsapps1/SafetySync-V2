@@ -1,3 +1,10 @@
+// BOOT VERSION log - proves this build is deployed
+const BUILD_TIMESTAMP = new Date().toISOString();
+console.log("BOOT VERSION", {
+  commit: process.env.RENDER_GIT_COMMIT || "unknown",
+  builtAt: BUILD_TIMESTAMP,
+});
+
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";

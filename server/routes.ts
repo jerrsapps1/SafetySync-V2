@@ -75,8 +75,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * (Usually via express.json({ verify: (req,res,buf)=>{ (req as any).rawBody = buf } }))
    */
   const stripeWebhookHandler = async (req: any, res: any) => {
+    console.log("🔥 STRIPE HANDLER EXECUTED", { path: req.path });
+
+    // Truth log: always log when webhook is hit
+    console.log("[STRIPE_WEBHOOK] hit", { path: req.path });
+
     try {
       if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
+        // Truth log: explain WHY we're returning 501
+        const hasSecretKey = !!process.env.STRIPE_SECRET_KEY;
+        const hasWebhookSecret = !!process.env.STRIPE_WEBHOOK_SECRET;
+        console.error("[STRIPE_WEBHOOK] not configured", {
+          path: req.path,
+          hasSecretKey,
+          hasWebhookSecret,
+          nodeEnv: process.env.NODE_ENV,
+        });
         return res.status(501).json({ error: "Webhook not configured" });
       }
 
