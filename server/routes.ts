@@ -136,10 +136,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: event.type,
               eventId: event.id,
             });
+            console.log("[CHECKOUT_HANDLER_START]", { eventId: event.id });
             const session = event.data.object as any;
 
             const orgId = session.metadata?.org_id;
             const planKey = session.metadata?.plan_key;
+            console.log("[CHECKOUT_ORG_RESOLVED]", { orgId });
 
             const subscriptionId =
               typeof session.subscription === "string"
@@ -158,6 +160,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (customerId) updateData.stripeCustomerId = customerId;
 
               await storage.updateCompany(orgId, updateData);
+              console.log("[CHECKOUT_DB_UPDATED]", {
+                orgId,
+                subscriptionId,
+                planKey,
+                status: "active",
+              });
               console.log(`Webhook: checkout.session.completed - org=${orgId} plan=${planKey}`);
             }
             break;

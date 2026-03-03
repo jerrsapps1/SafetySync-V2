@@ -109,6 +109,13 @@ export async function createCheckoutSession(
 ): Promise<string> {
   const stripe = getStripe();
 
+  console.log("[STRIPE_CHECKOUT_CREATE]", {
+    customerId,
+    priceId,
+    orgId: metadata.orgId,
+    planKey: metadata.planKey,
+  });
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
@@ -117,15 +124,22 @@ export async function createCheckoutSession(
     cancel_url: cancelUrl,
     allow_promotion_codes: true,
     metadata: {
-      org_id: metadata.orgId,
-      plan_key: metadata.planKey,
+      org_id: String(metadata.orgId),
+      plan_key: String(metadata.planKey),
+      app: "safetysync",
     },
     subscription_data: {
       metadata: {
-        org_id: metadata.orgId,
-        plan_key: metadata.planKey,
+        org_id: String(metadata.orgId),
+        plan_key: String(metadata.planKey),
+        app: "safetysync",
       },
     },
+  });
+
+  console.log("[STRIPE_CHECKOUT_CREATED]", {
+    sessionId: session.id,
+    metadata: session.metadata,
   });
 
   return session.url!;
