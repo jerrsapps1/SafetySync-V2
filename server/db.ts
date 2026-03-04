@@ -8,5 +8,16 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Enable SSL for remote databases (e.g., Render Postgres) but not for localhost
+const isLocalhost =
+  process.env.DATABASE_URL.includes("localhost") ||
+  process.env.DATABASE_URL.includes("127.0.0.1");
+
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: isLocalhost ? false : { rejectUnauthorized: false },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 export const db = drizzle({ client: pool, schema });
