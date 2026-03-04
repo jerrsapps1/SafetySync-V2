@@ -9,10 +9,38 @@ function resolveUrl(url: string): string {
   return url;
 }
 
+function handleSubscriptionRequired(): void {
+  if (typeof window === "undefined") return;
+
+  const currentPath = window.location.pathname;
+  if (currentPath === "/account") return;
+
+  const redirectUrl = `/account?reason=subscription&from=${encodeURIComponent(currentPath)}`;
+  window.location.href = redirectUrl;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    if (res.status === 402) {
+      handleSubscriptionRequired();
+      throw new Error("Subscription required");
+    }
+
+    if (res.status === 401) {
+      throw new Error("Unable to complete request. Please sign in again.");
+    }
+
+    if (res.status >= 500) {
+      throw new Error("Server error. Please try again later.");
+    }
+
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    try {
+      const json = JSON.parse(text);
+      throw new Error(json.error || "Request failed. Please try again.");
+    } catch {
+      throw new Error("Request failed. Please try again.");
+    }
   }
 }
 

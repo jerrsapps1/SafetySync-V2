@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { apiRequest } from "@/lib/apiClient";
 
 interface User {
   id: string;
@@ -15,6 +16,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
+  checkBillingAndGetRedirect: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,10 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedAuth = localStorage.getItem("safetysync-authed");
+    const storedToken = localStorage.getItem("auth_token");
 
     if (storedAuth === "true") {
       setUser(MOCK_WORKSPACE_USER);
-      setToken("mock-token");
+      setToken(storedToken || "mock-token");
+      if (!storedToken) {
+        localStorage.setItem("auth_token", "mock-token");
+      }
     }
     setIsLoading(false);
   }, []);
@@ -44,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginAs = (_r: string) => {
     setUser(MOCK_WORKSPACE_USER);
     setToken("mock-token");
+    localStorage.setItem("auth_token", "mock-token");
     localStorage.setItem("safetysync-role", "workspace");
     localStorage.setItem("safetysync-authed", "true");
   };
@@ -80,8 +87,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("safetysync-authed");
   };
 
+  const checkBillingAndGetRedirect = async (): Promise<string> => {
+    try {
+      const data = await apiRequest<{
+        company?: { billingStatus?: string };
+      }>("/api/account/summary");
+      const billingStatus = data?.company?.billingStatus || "trial";
+      if (billingStatus !== "active") {
+        return "/account";
+      }
+      return "/dashboard";
+    } catch (err) {
+      console.error("[Auth] Failed to check billing status:", err);
+      return "/dashboard";
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, loginAs, logout, isLoading, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, login, loginAs, logout, isLoading, isAuthenticated: !!user, checkBillingAndGetRedirect }}>
       {children}
     </AuthContext.Provider>
   );

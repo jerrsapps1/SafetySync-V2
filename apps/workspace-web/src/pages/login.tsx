@@ -9,20 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Sun, Moon, Languages } from "lucide-react";
+import { Sun, Moon, Languages, Loader2 } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { loginAs } = useAuth();
+  const { loginAs, checkBillingAndGetRedirect } = useAuth();
   const { t, toggleLang, lang } = useI18n();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleWorkspaceLogin = () => {
+  const handleWorkspaceLogin = async () => {
+    setIsLoggingIn(true);
     loginAs("workspace");
     toast({ title: t("auth.loginSuccess"), description: t("auth.welcomeBack") });
-    setLocation("/dashboard");
+    const redirectPath = await checkBillingAndGetRedirect();
+    setLocation(redirectPath);
+    setIsLoggingIn(false);
   };
 
   return (
@@ -50,8 +54,10 @@ export default function Login() {
             <Button
               className="w-full"
               onClick={handleWorkspaceLogin}
+              disabled={isLoggingIn}
               data-testid="button-login-workspace"
             >
+              {isLoggingIn && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t("auth.signInWorkspace")}
             </Button>
           </div>
@@ -88,14 +94,19 @@ export default function Login() {
                 </div>
                 <Button
                   className="w-full"
-                  onClick={() => {
+                  disabled={isLoggingIn}
+                  onClick={async () => {
+                    setIsLoggingIn(true);
                     loginAs("workspace");
                     setIsSignUpOpen(false);
                     toast({ title: t("auth.accountCreated") });
-                    setLocation("/dashboard");
+                    const redirectPath = await checkBillingAndGetRedirect();
+                    setLocation(redirectPath);
+                    setIsLoggingIn(false);
                   }}
                   data-testid="button-signup-submit"
                 >
+                  {isLoggingIn && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {t("auth.createAccount")}
                 </Button>
               </div>
