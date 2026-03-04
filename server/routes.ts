@@ -1145,6 +1145,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // -------------------------
+  // TEST ENDPOINTS (local/dev only - NEVER exposed in production)
+  // -------------------------
+  const allowTestBillingFlips =
+    process.env.NODE_ENV !== "production" && process.env.ALLOW_TEST_BILLING_FLIPS === "true";
+
+  if (allowTestBillingFlips) {
+    app.get("/api/admin/test/companies", requireAuth, requireRole(["owner_admin"]), async (req, res) => {
+      try {
+        const allCompanies = await storage.getAllCompanies();
+        const companies = allCompanies.slice(0, 20).map((c) => ({
+          id: c.id,
+          name: c.name,
+          billingStatus: c.billingStatus,
+          stripeCustomerId: c.stripeCustomerId || null,
+          createdAt: c.createdAt?.toISOString() || null,
+        }));
+        res.json({ ok: true, companies });
+      } catch (error: any) {
+        console.error("Test list companies error:", error);
+        res.status(500).json({ error: "Failed to list companies" });
+      }
+    });
+
+    app.post("/api/admin/test/billing-status", requireAuth, requireRole(["owner_admin"]), async (req, res) => {
+      try {
+        const { orgId, status } = req.body;
+
+        if (!orgId || typeof orgId !== "string") {
+          return res.status(400).json({ error: "Missing or invalid orgId" });
+        }
+
+        const validStatuses = ["active", "past_due", "canceled", "trial"];
+        if (!status || !validStatuses.includes(status)) {
+          return res.status(400).json({
+            error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+          });
+        }
+
+        const company = await storage.getCompany(orgId);
+        if (!company) {
+          return res.status(404).json({ error: "Organization not found" });
+        }
+
+        await storage.updateCompany(orgId, { billingStatus: status });
+
+        console.log("[TEST_BILLING_FLIP]", {
+          orgId,
+          previousStatus: company.billingStatus,
+          newStatus: status,
+          changedBy: (req as any).user.email,
+        });
+
+        res.json({ ok: true, orgId, status });
+      } catch (error: any) {
+        console.error("Test billing flip error:", error);
+        res.status(500).json({ error: "Failed to update billing status" });
+      }
+    });
+
+    app.post("/api/admin/test/impersonate", requireAuth, requireRole(["owner_admin"]), async (req, res) => {
+      try {
+        const { companyId, role } = req.body;
+
+        if (!companyId || typeof companyId !== "string") {
+          return res.status(400).json({ error: "Missing or invalid companyId" });
+        }
+
+        const validRoles: UserRole[] = ["workspace_user", "owner_admin"];
+        const selectedRole: UserRole = validRoles.includes(role) ? role : "workspace_user";
+
+        const company = await storage.getCompany(companyId);
+        if (!company) {
+          return res.status(404).json({ error: "Company not found" });
+        }
+
+        const token = generateToken({
+          userId: `test-user-${Date.now()}`,
+          email: "dev@test.local",
+          role: selectedRole,
+          orgId: companyId,
+        });
+
+        console.log("[TEST_IMPERSONATE]", {
+          companyId,
+          companyName: company.name,
+          role: selectedRole,
+          issuedBy: (req as any).user.email,
+        });
+
+        res.json({ ok: true, token });
+      } catch (error: any) {
+        console.error("Test impersonate error:", error);
+        res.status(500).json({ error: "Failed to generate test token" });
+      }
+    });
+  } else {
+    app.get("/api/admin/test/companies", (req, res) => {
+      res.status(404).json({ error: "Not found" });
+    });
+    app.post("/api/admin/test/billing-status", (req, res) => {
+      res.status(404).json({ error: "Not found" });
+    });
+    app.post("/api/admin/test/impersonate", (req, res) => {
+      res.status(404).json({ error: "Not found" });
+    });
+  }
+
   const httpServer = createServer(app);
   return httpServer;
 }
