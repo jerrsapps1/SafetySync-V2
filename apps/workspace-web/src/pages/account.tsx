@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +14,10 @@ import {
   Clock,
   XCircle,
   Loader2,
+  LogIn,
 } from "lucide-react";
 import { apiRequest } from "@/lib/apiClient";
+import { useAuth } from "@/contexts/AuthContext";
 
 type BillingStatus = "active" | "trial" | "past_due" | "canceled";
 
@@ -81,10 +84,12 @@ function BillingStatusBanner({
   status,
   onAction,
   isLoading,
+  error,
 }: {
   status: BillingStatus;
   onAction: () => void;
   isLoading: boolean;
+  error?: string | null;
 }) {
   if (status === "active") return null;
 
@@ -102,9 +107,12 @@ function BillingStatusBanner({
     <div
       className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border p-4 ${bgClass}`}
     >
-      <div className="flex items-start gap-3">
-        <Icon className="h-5 w-5 mt-0.5 shrink-0" />
-        <p className="text-sm font-medium">{config.message}</p>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-start gap-3">
+          <Icon className="h-5 w-5 mt-0.5 shrink-0" />
+          <p className="text-sm font-medium">{config.message}</p>
+        </div>
+        {error && <p className="text-xs text-red-400 ml-8">{error}</p>}
       </div>
       <Button
         variant={buttonVariant}
@@ -113,8 +121,14 @@ function BillingStatusBanner({
         disabled={isLoading}
         className="shrink-0"
       >
-        {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-        {config.buttonText}
+        {isLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Opening…
+          </>
+        ) : (
+          config.buttonText
+        )}
       </Button>
     </div>
   );
@@ -137,40 +151,70 @@ function LoadingSkeleton() {
   );
 }
 
-function ErrorMessage({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorMessage({
+  message,
+  onRetry,
+  isAuthError,
+  onLogin,
+}: {
+  message: string;
+  onRetry: () => void;
+  isAuthError?: boolean;
+  onLogin?: () => void;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-200">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-200">
       <div className="flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 shrink-0" />
         <p className="text-sm font-medium">{message}</p>
       </div>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        Retry
-      </Button>
+      <div className="flex gap-2">
+        {isAuthError && onLogin ? (
+          <Button variant="default" size="sm" onClick={onLogin}>
+            <LogIn className="h-4 w-4 mr-2" />
+            Go to Login
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            Retry
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function AccountPage() {
+  const [, setLocation] = useLocation();
+  const { logout } = useAuth();
   const [accountData, setAccountData] = useState<AccountSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
   const [isBillingLoading, setIsBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
+
+  const handleGoToLogin = () => {
+    logout();
+    setLocation("/login");
+  };
 
   const fetchAccountSummary = async () => {
     setIsLoading(true);
     setError(null);
+    setIsAuthError(false);
     try {
       const data = await apiRequest<AccountSummary>("/api/account/summary");
       setAccountData(data);
     } catch (err) {
       console.error("[Account] Failed to fetch summary:", err);
       const rawMessage = err instanceof Error ? err.message : "Unknown error";
-      const isAuthError =
+      const authError =
         rawMessage.toLowerCase().includes("sign in") ||
         rawMessage.toLowerCase().includes("auth") ||
         rawMessage.includes("401");
-      const friendlyMessage = isAuthError
+      setIsAuthError(authError);
+      const friendlyMessage = authError
         ? "Please sign in again to view account details."
         : "Unable to load account information. Please try again.";
       setError(friendlyMessage);
@@ -185,26 +229,30 @@ export default function AccountPage() {
 
   const openBillingPortal = async () => {
     setIsBillingLoading(true);
+    setBillingError(null);
     try {
       const data = await apiRequest<{ url: string }>("/api/billing/portal", {
         method: "POST",
+        body: JSON.stringify({ returnUrl: window.location.origin + "/account" }),
       });
       if (data.url) {
-        window.location.href = data.url;
+        window.location.assign(data.url);
       } else {
         throw new Error("No portal URL returned");
       }
     } catch (err) {
       console.error("[Account] Billing portal error:", err);
       const rawMessage = err instanceof Error ? err.message : "Unknown error";
-      const isAuthError =
+      const authError =
         rawMessage.toLowerCase().includes("sign in") ||
         rawMessage.toLowerCase().includes("auth") ||
         rawMessage.includes("401");
-      const friendlyMessage = isAuthError
-        ? "Please sign in again to open the billing portal."
-        : "Unable to open billing portal. Please try again.";
-      setError(friendlyMessage);
+      if (authError) {
+        setError("Please sign in again to open the billing portal.");
+        setIsAuthError(true);
+      } else {
+        setBillingError("Unable to open billing portal. Please try again.");
+      }
       setIsBillingLoading(false);
     }
   };
@@ -254,7 +302,14 @@ export default function AccountPage() {
       </div>
 
       {/* Error Message */}
-      {error && <ErrorMessage message={error} onRetry={fetchAccountSummary} />}
+      {error && (
+        <ErrorMessage
+          message={error}
+          onRetry={fetchAccountSummary}
+          isAuthError={isAuthError}
+          onLogin={handleGoToLogin}
+        />
+      )}
 
       {/* Status Banner - shown when subscription is not active */}
       {billingStatus !== "active" && (
@@ -262,6 +317,7 @@ export default function AccountPage() {
           status={billingStatus}
           onAction={openBillingPortal}
           isLoading={isBillingLoading}
+          error={billingError}
         />
       )}
 
@@ -313,12 +369,20 @@ export default function AccountPage() {
               disabled={isBillingLoading}
             >
               {isBillingLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Opening…
+                </>
               ) : (
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Manage Billing
+                </>
               )}
-              Manage Billing
             </Button>
+            {billingError && (
+              <p className="text-xs text-red-400 mt-2">{billingError}</p>
+            )}
           </CardContent>
         </Card>
 

@@ -834,17 +834,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/account/summary", requireAuth, async (req, res) => {
     try {
-      const companyId = (req as any).user.orgId;
+      const user = (req as any).user;
+      const companyId = user.orgId || user.companyId;
+
       if (!companyId) {
-        return res.status(403).json({ error: "No organization associated with user" });
+        return res.status(404).json({ error: "organization_not_found" });
       }
 
       const company = await storage.getCompany(companyId);
       if (!company) {
-        return res.status(404).json({ error: "Company not found" });
+        return res.status(404).json({ error: "organization_not_found" });
       }
 
-      const user = (req as any).user;
       const fullUser = await storage.getUser(user.id);
 
       const [employeesList, records, locationsList] = await Promise.all([
@@ -854,6 +855,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       res.json({
+        plan: company.plan || "free",
+        billingStatus: company.billingStatus || "trial",
+        currentPeriodStart: (company as any).currentPeriodStart?.toISOString?.() || null,
+        currentPeriodEnd: (company as any).currentPeriodEnd?.toISOString?.() || company.trialEndDate?.toISOString() || null,
+        email: user.email,
+        organizationName: company.name,
+        employeeCount: employeesList.length,
+        trainingRecordCount: records.length,
         company: {
           id: company.id,
           name: company.name,
@@ -1096,7 +1105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!isStripeConfigured()) {
         return res.status(501).json({
-          error: "Billing portal is not configured. Stripe integration is not yet set up.",
+          error: "stripe_not_configured",
+          message: "Billing portal is not configured. Stripe integration is not yet set up.",
         });
       }
 
@@ -1126,9 +1136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Billing portal error:", error);
       if (error.message === "STRIPE_NOT_CONFIGURED") {
-        return res.status(501).json({ error: "Stripe is not configured." });
+        return res.status(501).json({ error: "stripe_not_configured", message: "Stripe is not configured." });
       }
-      res.status(500).json({ error: "Failed to create billing portal session" });
+      res.status(500).json({ error: "billing_portal_error", message: "Failed to create billing portal session" });
     }
   });
 

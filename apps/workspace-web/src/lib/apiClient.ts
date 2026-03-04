@@ -1,3 +1,12 @@
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
+
+function resolveUrl(url: string): string {
+  if (API_BASE && url.startsWith("/")) {
+    return `${API_BASE}${url}`;
+  }
+  return url;
+}
+
 export function getAuthToken(): string | null {
   return localStorage.getItem("auth_token");
 }
@@ -6,6 +15,13 @@ export class SubscriptionRequiredError extends Error {
   constructor(public billingStatus: string) {
     super("Subscription required");
     this.name = "SubscriptionRequiredError";
+  }
+}
+
+export class AuthenticationRequiredError extends Error {
+  constructor() {
+    super("Please sign in again to view account details.");
+    this.name = "AuthenticationRequiredError";
   }
 }
 
@@ -34,9 +50,10 @@ export async function apiRequest<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
+  const response = await fetch(resolveUrl(url), {
     ...options,
     headers,
+    credentials: "include",
   });
 
   if (!response.ok) {
